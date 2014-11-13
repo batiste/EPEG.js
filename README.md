@@ -1,4 +1,4 @@
-EPEG.js -- Expressive Parsing Expression Grammar
+EPEG.js - Expressive Parsing Expression Grammar
 ================================================
 
 A top down parser that can handle left recursion by using a stack and backtracking.
@@ -27,3 +27,10 @@ Example of a valid grammar
 
     valid("1 + 1");
     valid("1 + 1 - 4");
+    
+The grammar can use modifiers (* == 0 to N, ? == 0 or 1):
+
+    var grammar = {
+      "NUMBER": {rules:["number comma"]},
+      "NUMBER_LIST": {rules:["NUMBER* number comma?"]}
+    }
