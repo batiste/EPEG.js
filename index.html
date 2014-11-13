@@ -1,0 +1,88 @@
+<html>
+<head>
+</head>
+<body>
+<script src='parser.js'></script>
+<script>
+
+// token are matched in order of declaration
+// TODO: add functions
+var tokens = {
+  name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
+  comparison: /^(<=|>=|<|>|===|==)/,
+  assign: /^(\+=|-=|=)/,
+  number: /^-?[0-9]+\.?[0-9]*/,
+  function_def: /^def/,
+  _if: /^if/,
+  _else: /^else/,
+  _elseif: /^elseif/,
+  comma: /^,/,
+  dot: /^\./,
+  for_loop: /^for/,
+  open_par: /^\(/,
+  close_par: /^\)/,
+  math: /^[-|\+|\*|/|%]/,
+  newline: /^(\r?\n|$)/,
+  W: /^[ ]/,
+  string: /^"([^"\\]*(\\.[^"\\]*)*)"/,
+};
+
+grammar = {
+  "VALUE": {rules:["number", "string"], consume:1},
+  "PARAMS": {rules:["n:name comma W"],
+    func:function(params) { return params.n.value; }
+  },
+  "FUNC": {rules:[
+      "function_def open_par p:PARAMS* close_par",
+      "function_def W fn:name open_par p:PARAMS* close_par"
+    ],
+    func:function(params) { return params; }
+  },
+  "MATH": {rules:["EXPR w math w EXPR"]},
+  "VARNAME": {rules:["name dot VAR", "name"]},
+  "ASSIGN": {rules:["name W assign W EXPR"]},
+  "COMPARAISON": {rules:["EXPR W comparison W EXPR"]},
+  "EXPR": {rules:["MATH", "COMPARAISON", "VALUE", "open_par EXPR close_par"]},
+  "STATEMENT": {rules:["EXPR", "VALUE", "ASSIGN", "FUNC"]},
+  "LINE": {rules:["w:W* st:STATEMENT newline"],
+    func:function(params) { return {value:[indentLevel(params.w), params.st]}; }
+  },
+  "START": {rules:["LINE*"]},
+};
+
+var gram;
+
+window.onload = function() {
+
+gram = compile_grammar(grammar);
+
+};
+
+function assertTruthy(a, msg) {
+  if(!a) {
+    throw "Not thruty " + msg;
+  }
+}
+
+function valid(str) {
+  var s = isValidGrammar(tokenizer(str, tokens), gram);
+  assertTruthy(s, str);
+  return s;
+}
+
+function generateCode(node) {
+  if(typeof node == "string") {
+    return node;
+  }
+  if(typeof node.value == "string") {
+    return node.value;
+  }
+  var i;
+  str = "";// + node.type + " ";
+  for(i=0;i<node.value.length; i++) {
+    str += generateCode(node.value[i]);
+  }
+  return str;
+}
+
+</script>
