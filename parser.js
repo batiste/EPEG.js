@@ -1,7 +1,6 @@
+(function(){
 
-
-
-function tokenizer(input, tokens) {
+function tokenize(input, tokens) {
   // this keep the order of declaration
   var keys = Object.keys(tokens);
   var stream = [];
@@ -32,26 +31,6 @@ function tokenizer(input, tokens) {
   }
   return stream;
 }
-
-
-var last = 0;
-function indentLevel(w) {
-  var l = (w && w.length) || 0;
-  if(l > last) {
-    last = l;
-    return ['INDENT', l];
-  }
-  if(l < last) {
-    last = l;
-    return ['DEDENT', l];
-  }
-  last = l;
-  return ['SAMEDENT', l];
-}
-
-
-
-
 
 function copyToken(stoken, rtoken) {
   if(rtoken.name) {
@@ -92,7 +71,6 @@ function matchRule(grammar, rule, stream, pointer, parent) {
 
     var rtoken = rule[rp];
     var stoken = stream[sp];
-    //console.log(rtoken);
 
     if(grammar[rtoken.type]) {
 
@@ -223,8 +201,9 @@ function grammarToken(token) {
 }
 
 
-function compile_grammar(grammar) {
+function compileGrammar(grammar, tokenDef) {
   var keys = Object.keys(grammar);
+  var allValidKeys = keys.concat(Object.keys(tokenDef));
   var gram = {};
 
   for(i=0; i<keys.length; i++) {
@@ -237,7 +216,11 @@ function compile_grammar(grammar) {
     for(j=0; j<rules.length; j++) {
       var tokens = splitTrim(rules[j], ' ');
       tokens = tokens.map(function(t) {
-        return grammarToken(t);
+        var token = grammarToken(t);
+        if(allValidKeys.indexOf(token.type) == -1) {
+          throw "Invalid token type in the grammar: " + token.type;
+        }
+        return token;
       });
       splitted_rules.push(tokens);
     }
@@ -248,7 +231,7 @@ function compile_grammar(grammar) {
 }
 
 var stack = []; // TODO: not a global?
-function isValidGrammar(stream, grammar) {
+function parse(stream, grammar) {
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];
     result = matchRule(grammar, grammar.START.rules[i], stream, 0);
@@ -261,3 +244,11 @@ function isValidGrammar(stream, grammar) {
   return false;
 }
 
+window.EPEG = {
+  parse: parse,
+  stack: stack,
+  compileGrammar: compileGrammar,
+  tokenize: tokenize
+};
+
+})();

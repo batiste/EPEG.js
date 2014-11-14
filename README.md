@@ -20,9 +20,10 @@ Example of a valid grammar
       "START": {rules: ["MATH"]}
     };
 
-    var gram = compile_grammar(grammar);
+    var gram = EPEG.compileGrammar(grammar, tokens);
+    var stream = EPEG.tokenize(input, tokens);
     function valid(input) {
-      return isValidGrammar(tokenizer(input, tokens), gram);
+      return EPEG.parse(stream, gram);
     }
 
     valid("1 + 1");

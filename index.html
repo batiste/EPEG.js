@@ -7,7 +7,7 @@
 
 // token are matched in order of declaration
 // TODO: add functions
-var tokens = {
+var tokenDef = {
   name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
   comparison: /^(<=|>=|<|>|===|==)/,
   assign: /^(\+=|-=|=)/,
@@ -27,7 +27,7 @@ var tokens = {
   string: /^"([^"\\]*(\\.[^"\\]*)*)"/,
 };
 
-grammar = {
+var grammar = {
   "VALUE": {rules:["number", "string"], consume:1},
   "PARAMS": {rules:["n:name comma W"],
     func:function(params) { return params.n.value; }
@@ -38,11 +38,11 @@ grammar = {
     ],
     func:function(params) { return params; }
   },
-  "MATH": {rules:["EXPR w math w EXPR"]},
-  "VARNAME": {rules:["name dot VAR", "name"]},
+  "MATH": {rules:["VALUE W math W VALUE"]},
+  "VARNAME": {rules:["name dot VARNAME", "name"]},
   "ASSIGN": {rules:["name W assign W EXPR"]},
   "COMPARAISON": {rules:["EXPR W comparison W EXPR"]},
-  "EXPR": {rules:["MATH", "COMPARAISON", "VALUE", "open_par EXPR close_par"]},
+  "EXPR": {rules:["MATH", "VALUE", "COMPARAISON", "open_par EXPR close_par"]},
   "STATEMENT": {rules:["EXPR", "VALUE", "ASSIGN", "FUNC"]},
   "LINE": {rules:["w:W* st:STATEMENT newline"],
     func:function(params) { return {value:[indentLevel(params.w), params.st]}; }
@@ -50,11 +50,26 @@ grammar = {
   "START": {rules:["LINE*"]},
 };
 
+var last = 0;
+function indentLevel(w) {
+  var l = (w && w.length) || 0;
+  if(l > last) {
+    last = l;
+    return ['INDENT', l];
+  }
+  if(l < last) {
+    last = l;
+    return ['DEDENT', l];
+  }
+  last = l;
+  return ['SAMEDENT', l];
+}
+
 var gram;
 
 window.onload = function() {
 
-gram = compile_grammar(grammar);
+gram = EPEG.compileGrammar(grammar, tokenDef);
 
 };
 
@@ -65,7 +80,8 @@ function assertTruthy(a, msg) {
 }
 
 function valid(str) {
-  var s = isValidGrammar(tokenizer(str, tokens), gram);
+  var tokens = EPEG.tokenize(str, tokenDef);
+  var s = EPEG.parse(tokens, gram);
   assertTruthy(s, str);
   return s;
 }
