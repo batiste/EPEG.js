@@ -17,7 +17,7 @@ var tokens = {
 };
 
 var grammar = {
-  "MATH": {rules:["number w math w number", "MATH w math w number"]},
+  "MATH": {rules:["number w math w MATH", "number w math w number"]},
   "START": {rules: ["MATH"]}
 };
 
@@ -30,7 +30,7 @@ function valid(input) {
 valid("1 + 1");
 valid("1 + 1 - 4");
 ```
-    
+
 The grammar can use modifiers (* == 0 to N, ? == 0 or 1):
 
 ```javascript

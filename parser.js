@@ -78,32 +78,25 @@ function matchRule(grammar, rule, stream, pointer, parent) {
       var func = grammar[rtoken.type].func;
       var consume = grammar[rtoken.type].consume;
 
-      // is this slice necessary?
-      var abort = stack.slice(0, stack.length - 1).filter(function(i) {
-        if(i[0] == sp && i[1] == rtoken.type) {
-          return true;
-        }
-      }).length > 1;
-
-
-      if(abort) {
-        //console.log("Cycle detected");
-        str = "";
-        stack.map(function(i){
-          str +=  ", " + i[0] + " " + i[1];
-        });
-        //console.log(sp, rtoken.type, str);
-        return false;
-      }
-
       // iterate
       var found_one = false;
 
       for(j=0; j<expand_rules.length; j++) {
+
+        var abort = stack.filter(function(i) {
+          if(i[0] == sp && i[1] == rtoken.type && i[2] == j) {
+            return true;
+          }
+        }).length > 1;
+
+        if(abort) {
+          return false;
+        }
+
         var new_rule = expand_rules[j];
         var value = null;
 
-        stack.push([sp, rtoken.type]);
+        stack.push([sp, rtoken.type, j]);
         result = matchRule(grammar, new_rule, stream, sp);
         stack.pop();
 

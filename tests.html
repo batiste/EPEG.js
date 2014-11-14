@@ -1,0 +1,52 @@
+<html>
+<head>
+</head>
+<body>
+<script src='parser.js'></script>
+<script>
+window.onload = function(){
+
+var tokens = {
+  number: /^-?[0-9]+\.?[0-9]*/,
+  math: /^[-|\+|\*|/|%]/,
+  w: /^[ ]/,
+  end: /^[a]/
+};
+
+var grammar = {
+  "MATH": {rules:["number w math w MATH", "number"]},
+  "START": {rules: ["MATH"]}
+};
+
+var gram = EPEG.compileGrammar(grammar, tokens);
+
+function parse(input) {
+  var stream = EPEG.tokenize(input, tokens);
+  return EPEG.parse(stream, gram);
+}
+
+function assertTruthy(a, msg) {
+  if(!a) {
+    throw "Not thruty " + msg;
+  }
+}
+
+function assertComplete(input) {
+  var r = parse(input);
+  if(!r.complete) {
+  	console.log(r);
+    throw "Incomplete parsing on " + input + ", leftover " + input.slice(r.consumed);
+  }
+}
+
+
+assertComplete("1 + 1");
+assertComplete("1 + 1 + 1");
+assertComplete("1 + 1 + 1 + 1");
+assertComplete("1 + 1 + 1 + 1 + 1");
+assertComplete("1 + 1 + 1 + 1 + 1 + 1");
+
+
+};
+</script>
+</body>
