@@ -9,29 +9,33 @@ and backtrack when necessary.
 
 Example of a valid grammar
 
-    var tokens = {
-      number: /^-?[0-9]+\.?[0-9]*/,
-      math: /^[-|\+|\*|/|%]/,
-      w: /^[ ]/
-    };
+```javascript
+var tokens = {
+  number: /^-?[0-9]+\.?[0-9]*/,
+  math: /^[-|\+|\*|/|%]/,
+  w: /^[ ]/
+};
 
-    var grammar = {
-      "MATH": {rules:["number w math w number", "MATH w math w number"]},
-      "START": {rules: ["MATH"]}
-    };
+var grammar = {
+  "MATH": {rules:["number w math w number", "MATH w math w number"]},
+  "START": {rules: ["MATH"]}
+};
 
-    var gram = EPEG.compileGrammar(grammar, tokens);
-    var stream = EPEG.tokenize(input, tokens);
-    function valid(input) {
-      return EPEG.parse(stream, gram);
-    }
+var gram = EPEG.compileGrammar(grammar, tokens);
+var stream = EPEG.tokenize(input, tokens);
+function valid(input) {
+  return EPEG.parse(stream, gram);
+}
 
-    valid("1 + 1");
-    valid("1 + 1 - 4");
+valid("1 + 1");
+valid("1 + 1 - 4");
+```
     
 The grammar can use modifiers (* == 0 to N, ? == 0 or 1):
 
-    var grammar = {
-      "NUMBER": {rules:["number comma"]},
-      "NUMBER_LIST": {rules:["NUMBER* number comma?"]}
-    }
+```javascript
+var grammar = {
+  "NUMBER": {rules:["number comma"]},
+  "NUMBER_LIST": {rules:["NUMBER* number comma?"]}
+}
+```
