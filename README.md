@@ -22,8 +22,8 @@ var grammar = {
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
-var stream = EPEG.tokenize(input, tokens);
 function valid(input) {
+  var stream = EPEG.tokenize(input, tokens);
   return EPEG.parse(stream, gram);
 }
 
