@@ -61,109 +61,123 @@ function createParams(tokens) {
   return params;
 }
 
-function matchRule(grammar, rule, stream, pointer, parent) {
+function growLR(grammar, rule, stream, pos, memo) {
+  var sp, result;
+  while(true) {
+    sp = pos;
+    result = evalRuleBody(grammar, rule, stream, sp);
+
+    // ensure some progress is made
+    if(result === false || result[1] <= memo[1]) {
+      break;
+    }
+    memo[0] = result[0];
+    memo[1] = result[1];
+    memo[2] = result[2];
+  }
+  return memo;
+}
+
+function memoEval(grammar, rule, stream, pointer) {
+
+  var memo_entry = memoization[rule.key+';'+pointer+';'+rule.index];
+  var memo2_entry = memoization2[rule.key+';'+pointer];
+
+  if(memo2_entry !== undefined) {
+    return memo2_entry;
+  }
+
+  if(memo_entry === false) {
+    return false;
+  }
+  if(memo_entry !== undefined) {
+    return memo_entry;
+  }
+
+  // avoid infinite left recursion
+  memoization[rule.key+';'+pointer+';'+rule.index] = false;
+
+  return evalRuleBody(grammar, rule, stream, pointer);
+
+}
+
+function evalRuleBody(grammar, rule, stream, pointer) {
+
   var sp = pointer; // stream pointer
   var rp = 0; // rule pointer
   var i, j;
   var parsed = [];
 
-  while(stream[sp] && rule[rp]) {
+  var rtoken = rule.tokens[rp];
+  var stoken = stream[sp];
 
-    var rtoken = rule[rp];
-    var stoken = stream[sp];
+  while(rtoken && stoken) {
 
     if(grammar[rtoken.type]) {
 
       var expand_rules = grammar[rtoken.type].rules;
-      var func = grammar[rtoken.type].func;
-      var consume = grammar[rtoken.type].consume;
+      result = false;
 
-      // iterate
-      var found_one = false;
+      var m = memoization2[rtoken.type+';'+sp];
+      if(m) {
+        result = m;
+      }
 
-      for(j=0; j<expand_rules.length; j++) {
+      if(!result) {
+        for(j=0; j<expand_rules.length; j++) {
+          var r = expand_rules[j];
 
-        var abort = stack.filter(function(i) {
-          if(i[0] == sp && i[1] == rtoken.type && i[2] == j) {
-            return true;
+          result = memoEval(grammar, r, stream, sp);
+          if(result) {
+
+            memoization[r.key+';'+sp+';'+r.index] = result;
+            memoization2[r.key+';'+sp] = result;
+
+            result = growLR(grammar, rule, stream, pointer, result);
+            //rp = result[2];
+
+            break;
           }
-        }).length > 1;
-
-        if(abort) {
-          return false;
-        }
-
-        var new_rule = expand_rules[j];
-        var value = null;
-
-        stack.push([sp, rtoken.type, j]);
-        result = matchRule(grammar, new_rule, stream, sp);
-        stack.pop();
-
-        if(func && result) {
-          var params = createParams(result[0]);
-          if(params) {
-            result[0] = func(params);
-          }
-        }
-
-        if(result) {
-          parsed.push({type:rtoken.type, value:result[0], name:rtoken.name, repeat:rtoken.repeat});
-          sp = result[1];
-          found_one = true;
-          break; // stop at the first found one
         }
       }
-      if(found_one) {
-        if(rtoken.repeat === false) {
-          rp++;
-        }
-        if(rtoken.repeat === '?') {
-          rp++;
-        }
+
+      if(result) {
+        sp = result[1];
+        //rp = result[2];
+
+        parsed.push(result);
       } else {
-        if(rtoken.repeat === false) {
-          return false;
-        }
-        rp++;
+        return false;
       }
+
+      rp++;
 
     } else {
 
-      if(rtoken.repeat == '?') {
-        if(stoken.type == rtoken.type) {
-          parsed.push(copyToken(stoken, rtoken));
-          rp++;
-          sp++;
-        } else {
-          rp++;
-        }
-      } else if(rtoken.repeat == '*') {
-        if(stoken.type == rtoken.type) {
-          parsed.push(copyToken(stoken, rtoken));
-          sp++;
-        } else {
-          rp++;
-        }
-      } else if(rtoken.repeat === false) {
-        if(stoken.type == rtoken.type) {
-          parsed.push(copyToken(stoken, rtoken));
-          sp++;
-          rp++;
-        } else {
-          return false;
-        }
+      if(stoken.type == rtoken.type) {
+        parsed.push(copyToken(stoken, rtoken));
+        sp++;
+        rp++;
+      } else {
+        return false;
       }
 
     }
 
-    // rule is fullfilled
-    if(rule[rp] === undefined) {
-      return [parsed, sp];
+    rtoken = rule.tokens[rp];
+    stoken = stream[sp];
+
+    if(rtoken === undefined) {
+      return [parsed, sp, rp];
     }
 
-  }
-  return [parsed, sp];
+    if(stoken === undefined) {
+      return false;
+    }
+
+  } // end rule body loop
+
+  return false;
 }
 
 
@@ -215,7 +229,7 @@ function compileGrammar(grammar, tokenDef) {
         }
         return token;
       });
-      splitted_rules.push(tokens);
+      splitted_rules.push({key: key, index:j, tokens:tokens});
     }
 
     gram[key] = {rules:splitted_rules, func:line.func, consume:(line.consume || 0)};
@@ -224,14 +238,18 @@ function compileGrammar(grammar, tokenDef) {
 }
 
 var stack = []; // TODO: not a global?
+var memoization = {};
+var memoization2 = {};
 function parse(stream, grammar) {
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];
-    result = matchRule(grammar, grammar.START.rules[i], stream, 0);
+    memoization = {};
+    memoization2 = {};
+    result = memoEval(grammar, grammar.START.rules[i], stream, 0);
     if(result) {
       return {type:'START', value:result[0],
         repeat:false, consumed: result[1],
-        complete:result[1] === stream.length};
+        complete:result[1] === stream.length, l:stream.length};
     }
   }
   return false;
@@ -241,7 +259,8 @@ window.EPEG = {
   parse: parse,
   stack: stack,
   compileGrammar: compileGrammar,
-  tokenize: tokenize
+  tokenize: tokenize,
+  memoization: memoization
 };
 
 })();

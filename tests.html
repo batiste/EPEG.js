@@ -14,7 +14,7 @@ var tokens = {
 };
 
 var grammar = {
-  "MATH": {rules:["number w math w MATH", "number"]},
+  "MATH": {rules:["MATH w math w number", "number"]},
   "START": {rules: ["MATH"]}
 };
 
@@ -34,13 +34,18 @@ function assertTruthy(a, msg) {
 function assertComplete(input) {
   var r = parse(input);
   if(!r.complete) {
-  	console.log(r);
-    throw "Incomplete parsing on " + input + ", leftover " + input.slice(r.consumed);
+    console.log("Incomplete parsing on: " + input + ", leftover " + input.slice(r.consumed));
+  } else {
+  	console.log("Complete: "+input);
   }
 }
 
 
 assertComplete("1 + 1");
+
+
+// Object {START;0;0: false, MATH;0;0: false, MATH;0;1: Array[3], MATH;1;0: false, MATH;1;1: false}
+
 assertComplete("1 + 1 + 1");
 assertComplete("1 + 1 + 1 + 1");
 assertComplete("1 + 1 + 1 + 1 + 1");
