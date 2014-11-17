@@ -21,7 +21,7 @@ var tokens = {
 };
 
 var grammar = {
-  "MATH": {rules:["number w math w MATH", "number w math w number"]},
+  "MATH": {rules:["MATH w math w number", "number w math w number"]},
   "START": {rules: ["MATH"]}
 };
 
