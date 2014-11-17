@@ -17,15 +17,17 @@ var tokens = {
   closeP: /^\)/,
   comma: /^\,/,
   openB: /^\[/,
-  closeB: /^\]/
+  closeB: /^\]/,
+  assign: /^\=/
 };
 
 var grammar = {
   "TERM": {rules:["TERM w term w FACT", "FACT"]},
   "FACT": {rules:["FACT w fact w number", "number"]},
   "PATH": {rules:["PATH dot name", "name"]},
+  "ASSIGN": {rules:["PATH assign number"]},
   "EXPR": {rules:["openP EXPR closeP", "PATH openB EXPR closeB", "name comma EXPR", "PATH", "TERM"]},
-  "START": {rules: ["EXPR"]}
+  "START": {rules: ["ASSIGN", "EXPR"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -70,6 +72,9 @@ assertComplete("(0)");
 assertComplete("abc.def[0][0]");
 
 assertIncomplete("[0][0]");
+
+// assign
+assertComplete("a=1");
 
 
 var grammar = {
