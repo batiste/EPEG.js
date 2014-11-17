@@ -38,9 +38,9 @@ function parse(input) {
 function assertComplete(input) {
   var r = parse(input);
   if(!r.complete) {
-    console.log("Incomplete parsing on: " + input + ", leftover " + input.slice(r.consumed));
+    console.log("Incomplete parsing on: " + input + ", leftover " + input.slice(r.consumed), r);
   } else {
-    console.log('pass', r);
+    console.log('pass');
   }
 }
 
@@ -71,6 +71,21 @@ assertComplete("abc.def[0][0]");
 
 assertIncomplete("[0][0]");
 
+
+var grammar = {
+  "EXPR": {rules:["number dot* name", "w number w number?"]},
+  "START": {rules: ["EXPR"]}
+};
+
+var gram = EPEG.compileGrammar(grammar, tokens);
+
+assertComplete("6.....hello");
+assertComplete("6hello");
+assertIncomplete("6.....6");
+
+assertComplete(" 6 6");
+assertComplete(" 6 ");
+assertIncomplete(" 6 6 6");
 
 
 };

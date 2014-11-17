@@ -161,9 +161,14 @@ function evalRuleBody(grammar, rule, stream, pointer) {
       if(stoken.type == rtoken.type) {
         parsed.push(copyToken(stoken, rtoken));
         sp++;
-        rp++;
+        if(rtoken.repeat === false || rtoken.repeat === '?') {
+          rp++;
+        }
       } else {
-        return false;
+        if(rtoken.repeat === false) {
+          return false;
+        }
+        rp++;
       }
 
     }
@@ -176,6 +181,9 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     }
 
     if(stoken === undefined) {
+      if(rtoken.repeat !== false) {
+        return [parsed, sp];
+      }
       return false;
     }
 
