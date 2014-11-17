@@ -1,3 +1,12 @@
+/*
+  JavaScript implementation of  a Packrat Parsers with left Recursion Support
+  http://www.vpri.org/pdf/tr2007002_packrat.pdf
+
+  No Indirect Left Recursion yet :-(
+
+  Batiste Bieler 2014
+*/
+
 (function(){
 
 function tokenize(input, tokens) {
@@ -73,31 +82,31 @@ function growLR(grammar, rule, stream, pos, memo) {
     }
     memo[0] = result[0];
     memo[1] = result[1];
-    memo[2] = result[2];
   }
   return memo;
 }
 
 function memoEval(grammar, rule, stream, pointer) {
 
-  var memo_entry = memoization[rule.key+';'+pointer+';'+rule.index];
-  var memo2_entry = memoization2[rule.key+';'+pointer];
+  var memo_entry = memoization[rule.key+';'+pointer];
+  var key = rule.key+';'+pointer+';'+rule.index;
 
-  if(memo2_entry !== undefined) {
-    return memo2_entry;
+  // avoid infinite recursion
+  var already_in_stack = stack.filter(function(i){
+    return i[0] == key;
+  }).length;
+  if(already_in_stack > 0) {
+      return false;
   }
 
-  if(memo_entry === false) {
-    return false;
-  }
   if(memo_entry !== undefined) {
     return memo_entry;
   }
 
-  // avoid infinite left recursion
-  memoization[rule.key+';'+pointer+';'+rule.index] = false;
-
-  return evalRuleBody(grammar, rule, stream, pointer);
+  stack.push([key, rule]);
+  var result = evalRuleBody(grammar, rule, stream, pointer);
+  stack.pop();
+  return result;
 
 }
 
@@ -105,7 +114,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
   var sp = pointer; // stream pointer
   var rp = 0; // rule pointer
-  var i, j;
+  var i, j, result;
   var parsed = [];
 
   var rtoken = rule.tokens[rp];
@@ -118,7 +127,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
       var expand_rules = grammar[rtoken.type].rules;
       result = false;
 
-      var m = memoization2[rtoken.type+';'+sp];
+      var m = memoization[rtoken.type+';'+sp];
       if(m) {
         result = m;
       }
@@ -126,16 +135,13 @@ function evalRuleBody(grammar, rule, stream, pointer) {
       if(!result) {
         for(j=0; j<expand_rules.length; j++) {
           var r = expand_rules[j];
-
           result = memoEval(grammar, r, stream, sp);
           if(result) {
-
-            memoization[r.key+';'+sp+';'+r.index] = result;
-            memoization2[r.key+';'+sp] = result;
-
-            result = growLR(grammar, rule, stream, pointer, result);
-            //rp = result[2];
-
+            memoization[r.key+';'+sp] = result;
+            // detect Left Recusion?
+            if(rp === 0) {
+              result = growLR(grammar, rule, stream, pointer, result);
+            }
             break;
           }
         }
@@ -143,9 +149,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
       if(result) {
         sp = result[1];
-        //rp = result[2];
-
-        parsed.push(result);
+        parsed.push({type: rtoken.type, children:result[0], consumed:result[1]});
       } else {
         return false;
       }
@@ -168,7 +172,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     stoken = stream[sp];
 
     if(rtoken === undefined) {
-      return [parsed, sp, rp];
+      return [parsed, sp];
     }
 
     if(stoken === undefined) {
@@ -232,27 +236,32 @@ function compileGrammar(grammar, tokenDef) {
       splitted_rules.push({key: key, index:j, tokens:tokens});
     }
 
-    gram[key] = {rules:splitted_rules, func:line.func, consume:(line.consume || 0)};
+    gram[key] = {rules:splitted_rules, func:line.func};
   }
   return gram;
 }
 
-var stack = []; // TODO: not a global?
+// those a module globals
+var stack = [];
 var memoization = {};
-var memoization2 = {};
+
 function parse(stream, grammar) {
+  var bestResult = {type:'START', consumed:0, complete:false};
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];
     memoization = {};
-    memoization2 = {};
     result = memoEval(grammar, grammar.START.rules[i], stream, 0);
-    if(result) {
-      return {type:'START', value:result[0],
-        repeat:false, consumed: result[1],
-        complete:result[1] === stream.length, l:stream.length};
+    if(result && result[1] > bestResult.consumed) {
+      bestResult = {
+        type:'START',
+        children:result[0],
+        consumed: result[1],
+        complete:result[1] === stream.length,
+        inputLength:stream.length
+      };
     }
   }
-  return false;
+  return bestResult;
 }
 
 window.EPEG = {

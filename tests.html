@@ -8,14 +8,24 @@ window.onload = function(){
 
 var tokens = {
   number: /^-?[0-9]+\.?[0-9]*/,
-  math: /^[-|\+|\*|/|%]/,
+  term: /^[\+|-]/,
+  fact: /^[\*|/]/,
   w: /^[ ]/,
-  end: /^[a]/
+  name: /^[a-zA-Z]+/,
+  dot: /^\./,
+  openP: /^\(/,
+  closeP: /^\)/,
+  comma: /^\,/,
+  openB: /^\[/,
+  closeB: /^\]/
 };
 
 var grammar = {
-  "MATH": {rules:["MATH w math w number", "number"]},
-  "START": {rules: ["MATH"]}
+  "TERM": {rules:["TERM w term w FACT", "FACT"]},
+  "FACT": {rules:["FACT w fact w number", "number"]},
+  "PATH": {rules:["PATH dot name", "name"]},
+  "EXPR": {rules:["openP EXPR closeP", "PATH openB EXPR closeB", "name comma EXPR", "PATH", "TERM"]},
+  "START": {rules: ["EXPR"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -25,31 +35,42 @@ function parse(input) {
   return EPEG.parse(stream, gram);
 }
 
-function assertTruthy(a, msg) {
-  if(!a) {
-    throw "Not thruty " + msg;
-  }
-}
-
 function assertComplete(input) {
   var r = parse(input);
   if(!r.complete) {
     console.log("Incomplete parsing on: " + input + ", leftover " + input.slice(r.consumed));
   } else {
-  	console.log("Complete: "+input);
+    console.log('pass', r);
   }
 }
 
+function assertIncomplete(input) {
+  var r = parse(input);
+  if(r.complete) {
+    console.log("Complete: "+input, r);
+  } else {
+    console.log('pass');
+  }
+}
 
+// test left recursion
+assertComplete("1");
 assertComplete("1 + 1");
+assertComplete("1 + 1 - 1");
+assertComplete("1 + 1 * 1 - 1 / 1 + 1");
+assertIncomplete("1 + ");
+assertIncomplete("+ 1");
 
+// test right recursion
+assertComplete("a,b,c,1");
 
-// Object {START;0;0: false, MATH;0;0: false, MATH;0;1: Array[3], MATH;1;0: false, MATH;1;1: false}
+// middle recursion
+assertComplete("(0)");
 
-assertComplete("1 + 1 + 1");
-assertComplete("1 + 1 + 1 + 1");
-assertComplete("1 + 1 + 1 + 1 + 1");
-assertComplete("1 + 1 + 1 + 1 + 1 + 1");
+assertComplete("abc.def[0][0]");
+
+assertIncomplete("[0][0]");
+
 
 
 };

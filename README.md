@@ -3,9 +3,13 @@ EPEG.js - Expressive Parsing Expression Grammar
 
 A top down parser that can handle left recursion by using a stack and backtracking.
 
-Typical PEG parser cannot handle left recursion. I tried to use it and it drives me nuts.
+Typical PEG parser cannot handle left recursion.
 This project is an attempt to solve this problem by using a stack to detect recursion
-and backtrack when necessary.
+and backtrack when necessary. I used this paper as inspiration:
+
+http://www.vpri.org/pdf/tr2007002_packrat.pdf
+
+Indirect left recursion is not implemented yet.
 
 Example of a valid grammar
 
@@ -31,11 +35,4 @@ valid("1 + 1");
 valid("1 + 1 - 4");
 ```
 
-The grammar can use modifiers (* == 0 to N, ? == 0 or 1):
 
-```javascript
-var grammar = {
-  "NUMBER": {rules:["number comma"]},
-  "NUMBER_LIST": {rules:["NUMBER* number comma?"]}
-}
-```
