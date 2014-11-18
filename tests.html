@@ -22,10 +22,10 @@ var tokens = {
 };
 
 var grammar = {
-  "TERM": {rules:["TERM w term w FACT", "FACT"]},
-  "FACT": {rules:["FACT w fact w number", "number"]},
+  "TERM": {rules:["TERM w? term w? FACT", "FACT"]},
+  "FACT": {rules:["FACT w? fact w? number", "number"]},
   "PATH": {rules:["PATH dot name", "name"]},
-  "ASSIGN": {rules:["PATH assign number"]},
+  "ASSIGN": {rules:["PATH w? assign w? EXPR"]},
   "EXPR": {rules:["openP EXPR closeP", "PATH openB EXPR closeB", "name comma EXPR", "PATH", "TERM"]},
   "START": {rules: ["ASSIGN", "EXPR"]}
 };
@@ -73,8 +73,16 @@ assertComplete("abc.def[0][0]");
 
 assertIncomplete("[0][0]");
 
+assertComplete("abc");
+
 // assign
-assertComplete("a=1");
+assertComplete("abc = 1");
+
+assertComplete("abc = abc[0]");
+
+assertComplete("abc.def = 1");
+
+assertComplete("abc.def.sdf=(1)");
 
 
 var grammar = {

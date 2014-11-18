@@ -8,6 +8,7 @@
 */
 
 (function(){
+"use strict";
 
 function tokenize(input, tokens) {
   // this keep the order of declaration
@@ -93,7 +94,7 @@ function memoEval(grammar, rule, stream, pointer) {
 
   // avoid infinite recursion
   var already_in_stack = stack.filter(function(i){
-    return i[0] == key;
+    return i[0] === key;
   }).length;
   if(already_in_stack > 0) {
       return false;
@@ -114,7 +115,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
   var sp = pointer; // stream pointer
   var rp = 0; // rule pointer
-  var i, j, result;
+  var j, result;
   var parsed = [];
 
   var rtoken = rule.tokens[rp];
@@ -158,7 +159,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
     } else {
 
-      if(stoken.type == rtoken.type) {
+      if(stoken.type === rtoken.type) {
         parsed.push(copyToken(stoken, rtoken));
         sp++;
         if(rtoken.repeat === false || rtoken.repeat === '?') {
@@ -221,7 +222,7 @@ function grammarToken(token) {
 
 
 function compileGrammar(grammar, tokenDef) {
-  var keys = Object.keys(grammar);
+  var keys = Object.keys(grammar), i, j;
   var allValidKeys = keys.concat(Object.keys(tokenDef));
   var gram = {};
 
@@ -236,7 +237,7 @@ function compileGrammar(grammar, tokenDef) {
       var tokens = splitTrim(rules[j], ' ');
       tokens = tokens.map(function(t) {
         var token = grammarToken(t);
-        if(allValidKeys.indexOf(token.type) == -1) {
+        if(allValidKeys.indexOf(token.type) === -1) {
           throw "Invalid token type in the grammar: " + token.type;
         }
         return token;
@@ -254,7 +255,7 @@ var stack = [];
 var memoization = {};
 
 function parse(stream, grammar) {
-  var bestResult = {type:'START', consumed:0, complete:false};
+  var bestResult = {type:'START', consumed:0, complete:false}, i, result;
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];
     memoization = {};
