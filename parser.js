@@ -207,7 +207,7 @@ function grammarToken(token) {
     repeat = false;
   }
   var named = token.split(":");
-  if(named.length == 2) {
+  if(named.length === 2) {
     return {
       'type': named[1],
       'repeat': repeat,
@@ -250,7 +250,7 @@ function compileGrammar(grammar, tokenDef) {
   return gram;
 }
 
-// those a module globals
+// those are module globals
 var stack = [];
 var memoization = {};
 

@@ -11,6 +11,7 @@ var tokens = {
   term: /^[\+|-]/,
   fact: /^[\*|/]/,
   w: /^[ ]/,
+  func_def: /^def/,
   name: /^[a-zA-Z]+/,
   dot: /^\./,
   openP: /^\(/,
@@ -18,7 +19,7 @@ var tokens = {
   comma: /^\,/,
   openB: /^\[/,
   closeB: /^\]/,
-  assign: /^\=/
+  assign: /^\=/,
 };
 
 var grammar = {
@@ -26,8 +27,10 @@ var grammar = {
   "FACT": {rules:["FACT w? fact w? number", "number"]},
   "PATH": {rules:["PATH dot name", "name"]},
   "ASSIGN": {rules:["PATH w? assign w? EXPR"]},
+  "FUNC_PARAMS": {rules:["FUNC_PARAMS comma w? name", "name?"]},
+  "FUNC_DEF": {rules:["func_def w name openP FUNC_PARAMS closeP"]},
   "EXPR": {rules:["openP EXPR closeP", "PATH openB EXPR closeB", "name comma EXPR", "PATH", "TERM"]},
-  "START": {rules: ["ASSIGN", "EXPR"]}
+  "START": {rules: ["ASSIGN", "EXPR", "FUNC_DEF"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -37,21 +40,25 @@ function parse(input) {
   return EPEG.parse(stream, gram);
 }
 
-function assertComplete(input) {
+function assertComplete(input, log) {
   var r = parse(input);
   if(!r.complete) {
     console.log("Incomplete parsing on: " + input + ", leftover " + input.slice(r.consumed), r);
   } else {
     console.log('pass');
+    if(log)
+      console.log(r);
   }
 }
 
-function assertIncomplete(input) {
+function assertIncomplete(input, log) {
   var r = parse(input);
   if(r.complete) {
     console.log("Complete: "+input, r);
   } else {
     console.log('pass');
+    if(log)
+      console.log(r);
   }
 }
 
@@ -69,20 +76,23 @@ assertComplete("a,b,c,1");
 // middle recursion
 assertComplete("(0)");
 
-assertComplete("abc.def[0][0]");
+assertComplete("abc.der[0][0]");
 
 assertIncomplete("[0][0]");
 
 assertComplete("abc");
 
 // assign
+assertComplete("abc=1");
 assertComplete("abc = 1");
-
 assertComplete("abc = abc[0]");
+assertComplete("abc.der = 1");
+assertComplete("abc.der.sdf=(1)");
 
-assertComplete("abc.def = 1");
+// func definition
 
-assertComplete("abc.def.sdf=(1)");
+assertComplete("def func()");
+assertComplete("def func(a, b)", true);
 
 
 var grammar = {
