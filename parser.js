@@ -78,11 +78,11 @@ function growLR(grammar, rule, stream, pos, memo) {
     result = evalRuleBody(grammar, rule, stream, sp);
 
     // ensure some progress is made
-    if(result === false || result[1] <= memo[1]) {
-      break;
+    if(result === false || result.sp <= memo.sp) {
+      return memo;
     }
-    memo[0] = result[0];
-    memo[1] = result[1];
+    memo.children = result.children;
+    memo.sp = result.sp;
   }
   return memo;
 }
@@ -116,7 +116,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
   var sp = pointer; // stream pointer
   var rp = 0; // rule pointer
   var j, result;
-  var parsed = [];
+  var currentNode = {type: rule.type, children:[], sp:pointer};
 
   var rtoken = rule.tokens[rp];
   var stoken = stream[sp];
@@ -140,17 +140,21 @@ function evalRuleBody(grammar, rule, stream, pointer) {
           if(result) {
             memoization[r.key+';'+sp] = result;
             // detect Left Recusion?
-            if(rp === 0) {
-              result = growLR(grammar, rule, stream, pointer, result);
-            }
+            //if(rp === 0) {
+            result = growLR(grammar, rule, stream, pointer, result);
+            //}
+            currentNode.children = result.children;
+            currentNode.sp = result.sp;
+            currentNode.type = rtoken.type;
+            return currentNode;
             break;
           }
         }
       }
 
       if(result) {
-        sp = result[1];
-        parsed.push({type: rtoken.type, children:result[0], consumed:result[1]});
+        sp = result.sp;
+        currentNode.children.push({type: rtoken.type, children:result.children, sp:result.sp});
       } else {
         return false;
       }
@@ -160,7 +164,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     } else {
 
       if(stoken.type === rtoken.type) {
-        parsed.push(copyToken(stoken, rtoken));
+        currentNode.children.push(copyToken(stoken, rtoken));
         sp++;
         if(rtoken.repeat === false || rtoken.repeat === '?') {
           rp++;
@@ -178,12 +182,14 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     stoken = stream[sp];
 
     if(rtoken === undefined) {
-      return [parsed, sp];
+      currentNode.sp = sp;
+      return currentNode;
     }
 
     if(stoken === undefined) {
       if(rtoken.repeat !== false) {
-        return [parsed, sp];
+        currentNode.sp = sp;
+        return currentNode;
       }
       return false;
     }
@@ -255,17 +261,17 @@ var stack = [];
 var memoization = {};
 
 function parse(stream, grammar) {
-  var bestResult = {type:'START', consumed:0, complete:false}, i, result;
+  var bestResult = {type:'START', sp:0, complete:false}, i, result;
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];
     memoization = {};
     result = memoEval(grammar, grammar.START.rules[i], stream, 0);
-    if(result && result[1] > bestResult.consumed) {
+    if(result && result.sp > bestResult.sp) {
       bestResult = {
-        type:'START',
-        children:result[0],
-        consumed: result[1],
-        complete:result[1] === stream.length,
+        type:result.type,
+        children:result.children,
+        sp: result.sp,
+        complete:result.sp === stream.length,
         inputLength:stream.length
       };
     }

@@ -29,8 +29,10 @@ var grammar = {
   "ASSIGN": {rules:["PATH w? assign w? EXPR"]},
   "FUNC_PARAMS": {rules:["FUNC_PARAMS comma w? name", "name?"]},
   "FUNC_DEF": {rules:["func_def w name openP FUNC_PARAMS closeP"]},
-  "EXPR": {rules:["openP EXPR closeP", "PATH openB EXPR closeB", "name comma EXPR", "PATH", "TERM"]},
-  "START": {rules: ["ASSIGN", "EXPR", "FUNC_DEF"]}
+  "COMMA_SEPARATED_EXPR": {rules:["COMMA_SEPARATED_EXPR comma w EXPR", "EXPR"]},
+  "FUNC_CALL": {rules:["PATH openP FUNC_PARAMS closeP"]},
+  "EXPR": {rules:["name comma EXPR", "openP EXPR closeP", "PATH openB EXPR closeB", "PATH", "TERM"]},
+  "START": {rules: ["FUNC_CALL", "ASSIGN", "EXPR", "FUNC_DEF"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -42,8 +44,9 @@ function parse(input) {
 
 function assertComplete(input, log) {
   var r = parse(input);
+  var t = EPEG.tokenize(input, tokens);
   if(!r.complete) {
-    console.log("Incomplete parsing on: " + input + ", leftover " + input.slice(r.consumed), r);
+    console.log("Incomplete parsing on: " + input + ", leftover ", r);
   } else {
     console.log('pass');
     if(log)
@@ -90,9 +93,17 @@ assertComplete("abc.der = 1");
 assertComplete("abc.der.sdf=(1)");
 
 // func definition
-
 assertComplete("def func()");
-assertComplete("def func(a, b)", true);
+assertComplete("def func(a, b)");
+
+// func call
+assertComplete("a.func()");
+assertComplete("func()");
+assertComplete("func(a, b)");
+assertComplete("func(a, b, d, e)", true);
+
+assertComplete("func(a,b, c)");
+assertIncomplete("func(a,b,  c)");
 
 
 var grammar = {
