@@ -46,7 +46,7 @@ function assertComplete(input, log) {
   var r = parse(input);
   var t = EPEG.tokenize(input, tokens);
   if(!r.complete) {
-    console.log("Incomplete parsing on: " + input + ", leftover ", r);
+    console.log("Incomplete parsing on: " + input + ", leftover ", t.slice(r.consumed).map(function(i){return i.value}));
   } else {
     console.log('pass');
     if(log)
@@ -113,9 +113,10 @@ assertIncomplete("func(a,b,c)1");
 assertIncomplete("1 func(a)");
 
 var grammar = {
+  "TEST2": {rules:["openP"]},
   "TEST": {rules:["name comma TEST", "name comma"]},
   "EXPR": {rules:["number dot* name", "w number w number?"]},
-  "START": {rules: ["EXPR", "TEST", "number comma TEST? comma"]}
+  "START": {rules: ["EXPR", "TEST", "number comma TEST? comma", "TEST2* closeP"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -133,6 +134,12 @@ assertComplete("test,test,hello,");
 assertComplete("6,test,,");
 assertIncomplete("6,test,");
 assertComplete("6,,");
+
+assertComplete("()");
+assertComplete("((()");
+assertComplete(")");
+assertIncomplete("))");
+
 
 };
 </script>

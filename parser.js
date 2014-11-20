@@ -155,13 +155,15 @@ function evalRuleBody(grammar, rule, stream, pointer) {
       if(result) {
         sp = result.sp;
         currentNode.children.push({type: rtoken.type, children:result.children, sp:result.sp});
+        if(rtoken.repeat === false || rtoken.repeat === '?') {
+          rp++;
+        }
       } else {
         if(rtoken.repeat === false) {
           return false;
         }
+        rp++;
       }
-
-      rp++;
 
     } else {
 
