@@ -116,7 +116,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
   var sp = pointer; // stream pointer
   var rp = 0; // rule pointer
   var j, result;
-  var currentNode = {type: rule.type, children:[], sp:pointer};
+  var currentNode = {type: rule.key, children:[], sp:pointer};
 
   var rtoken = rule.tokens[rp];
   var stoken = stream[sp];
@@ -140,13 +140,13 @@ function evalRuleBody(grammar, rule, stream, pointer) {
           if(result) {
             memoization[r.key+';'+sp] = result;
             // detect Left Recusion?
-            //if(rp === 0) {
-            result = growLR(grammar, rule, stream, pointer, result);
-            //}
-            currentNode.children = result.children;
-            currentNode.sp = result.sp;
-            currentNode.type = rtoken.type;
-            return currentNode;
+            if(rp === 0) {
+              result = growLR(grammar, rule, stream, pointer, result);
+              currentNode.children = result.children;
+              currentNode.sp = result.sp;
+              currentNode.type = rtoken.type;
+              return currentNode;
+            }
             break;
           }
         }
@@ -156,7 +156,9 @@ function evalRuleBody(grammar, rule, stream, pointer) {
         sp = result.sp;
         currentNode.children.push({type: rtoken.type, children:result.children, sp:result.sp});
       } else {
-        return false;
+        if(rtoken.repeat === false) {
+          return false;
+        }
       }
 
       rp++;
@@ -199,11 +201,9 @@ function evalRuleBody(grammar, rule, stream, pointer) {
   return false;
 }
 
-
 function splitTrim(l, split) {
   return l.split(split).map(function(i){ return i.trim(); });
 }
-
 
 function grammarToken(token) {
   var repeat = token.charAt(token.length - 1);

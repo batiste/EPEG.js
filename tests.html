@@ -32,7 +32,7 @@ var grammar = {
   "COMMA_SEPARATED_EXPR": {rules:["COMMA_SEPARATED_EXPR comma w EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["PATH openP FUNC_PARAMS closeP"]},
   "EXPR": {rules:["name comma EXPR", "openP EXPR closeP", "PATH openB EXPR closeB", "PATH", "TERM"]},
-  "START": {rules: ["FUNC_CALL", "ASSIGN", "EXPR", "FUNC_DEF"]}
+  "START": {rules: ["FUNC_CALL","ASSIGN", "EXPR", "FUNC_DEF"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -65,6 +65,7 @@ function assertIncomplete(input, log) {
   }
 }
 
+
 // test left recursion
 assertComplete("1");
 assertComplete("1 + 1");
@@ -96,19 +97,25 @@ assertComplete("abc.der.sdf=(1)");
 assertComplete("def func()");
 assertComplete("def func(a, b)");
 
+
 // func call
-assertComplete("a.func()");
+assertComplete("a.b.func()");
 assertComplete("func()");
 assertComplete("func(a, b)");
-assertComplete("func(a, b, d, e)", true);
+assertComplete("func(a, b, d, e)");
 
 assertComplete("func(a,b, c)");
 assertIncomplete("func(a,b,  c)");
 
+assertIncomplete("func(a,b,c),");
+assertIncomplete("func(a,b,c)1");
+
+assertIncomplete("1 func(a)");
 
 var grammar = {
+  "TEST": {rules:["name comma TEST", "name comma"]},
   "EXPR": {rules:["number dot* name", "w number w number?"]},
-  "START": {rules: ["EXPR"]}
+  "START": {rules: ["EXPR", "TEST", "number comma TEST? comma"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -121,6 +128,11 @@ assertComplete(" 6 6");
 assertComplete(" 6 ");
 assertIncomplete(" 6 6 6");
 
+assertComplete("test,test,hello,");
+
+assertComplete("6,test,,");
+assertIncomplete("6,test,");
+assertComplete("6,,");
 
 };
 </script>
