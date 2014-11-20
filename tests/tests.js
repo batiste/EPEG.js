@@ -1,10 +1,3 @@
-<html>
-<head>
-</head>
-<body>
-<script src='parser.js'></script>
-<script>
-window.onload = function(){
 
 var tokens = {
   number: /^-?[0-9]+\.?[0-9]*/,
@@ -45,24 +38,19 @@ function parse(input) {
 function assertComplete(input, log) {
   var r = parse(input);
   var t = EPEG.tokenize(input, tokens);
-  if(!r.complete) {
-    console.log("Incomplete parsing on: " + input + ", leftover ", t.slice(r.consumed).map(function(i){return i.value}));
-  } else {
-    console.log('pass');
-    if(log)
-      console.log(r);
-  }
+
+  var msg = "Incomplete parsing on: " + input + ", leftover " + t.slice(r.consumed).map(function(i){return i.value;});
+
+  QUnit.test( input, function( assert ) {
+    assert.ok( r.complete, input );
+  });
 }
 
 function assertIncomplete(input, log) {
   var r = parse(input);
-  if(r.complete) {
-    console.log("Complete: "+input, r);
-  } else {
-    console.log('pass');
-    if(log)
-      console.log(r);
-  }
+  QUnit.test( input, function( assert ) {
+    assert.ok( !r.complete, input );
+  });
 }
 
 
@@ -141,6 +129,3 @@ assertComplete(")");
 assertIncomplete("))");
 
 
-};
-</script>
-</body>

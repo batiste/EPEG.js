@@ -1,5 +1,5 @@
 /*
-  JavaScript implementation of  a Packrat Parsers with left Recursion Support
+  JavaScript implementation of a Packrat Parsers with left Recursion Support
   http://www.vpri.org/pdf/tr2007002_packrat.pdf
 
   No Indirect Left Recursion yet :-(
