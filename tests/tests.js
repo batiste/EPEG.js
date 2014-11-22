@@ -13,6 +13,8 @@ var tokens = {
   openB: /^\[/,
   closeB: /^\]/,
   assign: /^\=/,
+  newLine: /^\n/,
+  EOF: true
 };
 
 var grammar = {
@@ -25,7 +27,7 @@ var grammar = {
   "COMMA_SEPARATED_EXPR": {rules:["COMMA_SEPARATED_EXPR comma w EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["PATH openP FUNC_PARAMS closeP"]},
   "EXPR": {rules:["name comma EXPR", "openP EXPR closeP", "PATH openB EXPR closeB", "PATH", "TERM"]},
-  "START": {rules: ["FUNC_CALL","ASSIGN", "EXPR", "FUNC_DEF"]}
+  "START": {rules: ["FUNC_CALL EOF","ASSIGN EOF", "EXPR EOF", "FUNC_DEF EOF"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -104,7 +106,7 @@ var grammar = {
   "TEST2": {rules:["openP"]},
   "TEST": {rules:["name comma TEST", "name comma"]},
   "EXPR": {rules:["number dot* name", "w number w number?"]},
-  "START": {rules: ["EXPR", "TEST", "number comma TEST? comma", "TEST2* closeP"]}
+  "START": {rules: ["EXPR EOF", "TEST EOF", "number comma TEST? comma EOF", "TEST2* closeP EOF"]}
 };
 
 var gram = EPEG.compileGrammar(grammar, tokens);
@@ -127,5 +129,27 @@ assertComplete("()");
 assertComplete("((()");
 assertComplete(")");
 assertIncomplete("))");
+
+function m1(p) {
+  return p.n;
+}
+
+var grammar = {
+  "LINE": {rules: ["n:number newLine"], funcs: [m1]},
+  "START": {rules: ["LINE* EOF"]}
+};
+
+var gram = EPEG.compileGrammar(grammar, tokens);
+
+
+assertComplete("6\n6\n");
+assertIncomplete("6\n6\n6");
+
+var parsed = parse("6\n6\n");
+console.log(parsed)
+
+QUnit.test( "Test that function calling with naming works", function( assert ) {
+  assert.equal( parsed.children[0].children.value, 6 );
+});
 
 

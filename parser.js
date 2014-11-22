@@ -39,6 +39,7 @@ function tokenize(input, tokens) {
       throw "No matching token found near " + input.substr(0, 12);
     }
   }
+  stream.push({type:'EOF', value:""});
   return stream;
 }
 
@@ -126,6 +127,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     if(grammar[rtoken.type]) {
 
       var expand_rules = grammar[rtoken.type].rules;
+      var funcs = grammar[rtoken.type].funcs;
       result = false;
 
       var m = memoization[rtoken.type+';'+sp];
@@ -137,7 +139,12 @@ function evalRuleBody(grammar, rule, stream, pointer) {
         for(j=0; j<expand_rules.length; j++) {
           var r = expand_rules[j];
           result = memoEval(grammar, r, stream, sp);
+
           if(result) {
+            if(funcs && funcs[j]) {
+              result.children = funcs[j](createParams(result.children));
+            }
+
             memoization[r.key+';'+sp] = result;
             // detect Left Recusion?
             if(rp === 0) {
@@ -245,7 +252,7 @@ function compileGrammar(grammar, tokenDef) {
       var tokens = splitTrim(rules[j], ' ');
       tokens = tokens.map(function(t) {
         var token = grammarToken(t);
-        if(allValidKeys.indexOf(token.type) === -1) {
+        if(allValidKeys.indexOf(token.type) === -1 && token.type !== 'EOF') {
           throw "Invalid token type in the grammar: " + token.type;
         }
         return token;
@@ -253,7 +260,7 @@ function compileGrammar(grammar, tokenDef) {
       splitted_rules.push({key: key, index:j, tokens:tokens});
     }
 
-    gram[key] = {rules:splitted_rules, func:line.func};
+    gram[key] = {rules: splitted_rules, funcs: line.funcs};
   }
   return gram;
 }
@@ -270,7 +277,7 @@ function parse(stream, grammar) {
     result = memoEval(grammar, grammar.START.rules[i], stream, 0);
     if(result && result.sp > bestResult.sp) {
       bestResult = {
-        type:result.type,
+        type:'START',
         children:result.children,
         sp: result.sp,
         complete:result.sp === stream.length,
