@@ -168,7 +168,7 @@ tokens = {
   fact: /^[\*|/]/,
   w: /^[ ]/,
   func_def: /^def/,
-  name: /^[a-zA-Z]+/,
+  name: /^[a-zA-Z][a-zA-Z1-9]*/,
   dot: /^\./,
   openP: /^\(/,
   closeP: /^\)/,
@@ -190,8 +190,8 @@ grammar = {
   "RIGHT_DOT": {rules:["PATH", "FUNC_CALL"]},
   "EXPR": {rules: [
     "MATH",
-    "openP EXPR closeP",
     "EXPR dot EXPR",
+    "openP EXPR closeP",
     "EXPR openB EXPR closeB",
     "FUNC_CALL",
     "number",
@@ -224,6 +224,8 @@ assertComplete("hello().test[0].hello().hello[0]\n", gram3);
 assertComplete("hello.hello()\n", gram3);
 
 
-assertComplete("hello.hello2.hello3.test\n", gram3);
+assertComplete("hello.hello.test.toto\n", gram3);
+
+assertComplete("(1 + 1).test()\n", gram3);
 
 
