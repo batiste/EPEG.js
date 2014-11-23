@@ -54,7 +54,7 @@ parser = EPEG.compileGrammar(grammarDef, tokensDef);
 
 valid("1 2 3 ");
 valid("");
-valid("1"); // Should throw an erro as the white space is missing
+valid("1"); // Should throw an error as the white space is missing
 ```
 
 ### Named tokens and functions hooks
@@ -65,11 +65,13 @@ function is called at parse time with a map of each named parameter or in order 
 ```javascript
 
 function numberHook(params) {
+  // we reject the white space params.ws here
+  // it will not apear in the AST
   return [params.num1, params.num2];
 }
 
 var grammarDef = {
-  "NAMED": {rules: ["num1:number w num2:number"], hooks: [numberHook]},
+  "NAMED": {rules: ["num1:number ws:w num2:number"], hooks: [numberHook]},
   "START": {rules: [""]}
 };
 
