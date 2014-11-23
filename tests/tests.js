@@ -171,12 +171,12 @@ tokens = {
 grammar = {
   "MATH": {rules:["EXPR w? math w? EXPR"]},
   "PATH": {rules:["PATH dot name", "name"]},
-  "ASSIGN": {rules:["PATH assign number"]},
+  "ASSIGN": {rules:["PATH w? assign w? EXPR"]},
   "FUNC_PARAMS": {rules:["FUNC_PARAMS comma w? name", "name?"]},
   "FUNC_DEF": {rules:["func_def w name openP FUNC_PARAMS closeP"]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma w? EXPR", "EXPR?"]},
   "FUNC_CALL": {rules:["PATH openP FUNC_CALL_PARAMS closeP"]},
-  "EXPR": {rules: ["MATH", "EXPR openP EXPR closeP", "EXPR openB EXPR closeB", "FUNC_CALL", "number", "name"]},
+  "EXPR": {rules: ["MATH", "openP EXPR closeP", "EXPR openB EXPR closeB", "FUNC_CALL", "number", "name"]},
   "STATEMENT": {rules: ["ASSIGN", "EXPR", "FUNC_DEF"]},
   "LINE": {rules: ["STATEMENT newLine"]},
   "START": {rules: ["LINE* EOF"]}
@@ -195,6 +195,8 @@ assertComplete("name() + name() + 1\n", gram3);
 
 assertComplete("name + 1\ntoto() + 3\n", gram3);
 assertIncomplete("name + 1\ntoto() + 3", gram3);
+
+assertComplete("hello.path = 1 + 1 + (hello + 2)\n", gram3);
 
 
 
