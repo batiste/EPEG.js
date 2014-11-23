@@ -73,19 +73,20 @@ function createParams(tokens) {
 }
 
 function growLR(grammar, rule, stream, pos, memo) {
-  var sp, result;
+  var sp, result, progress = false;
   while(true) {
     sp = pos;
     result = evalRuleBody(grammar, rule, stream, sp);
 
     // ensure some progress is made
     if(result === false || result.sp <= memo.sp) {
-      return memo;
+      return progress;
     }
     memo.children = result.children;
     memo.sp = result.sp;
+    progress = memo;
   }
-  return memo;
+  return progress;
 }
 
 function memoEval(grammar, rule, stream, pointer) {
@@ -122,6 +123,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
   var rtoken = rule.tokens[rp];
   var stoken = stream[sp];
 
+
   while(rtoken && stoken) {
 
     if(grammar[rtoken.type]) {
@@ -138,6 +140,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
       if(!result) {
         for(j=0; j<expand_rules.length; j++) {
           var r = expand_rules[j];
+
           result = memoEval(grammar, r, stream, sp);
 
           if(result) {
@@ -146,13 +149,16 @@ function evalRuleBody(grammar, rule, stream, pointer) {
             }
 
             memoization[r.key+';'+sp] = result;
-            // detect Left Recusion?
-            if(rp === 0) {
-              result = growLR(grammar, rule, stream, pointer, result);
-              currentNode.children = result.children;
-              currentNode.sp = result.sp;
-              currentNode.type = rtoken.type;
-              return currentNode;
+            // detect possible recursion, only works for the same rule type
+            if(r.key === rule.key) {
+              var n_result = growLR(grammar, rule, stream, pointer, result);
+
+              if(n_result !== false) {
+                currentNode.children = n_result.children;
+                currentNode.sp = n_result.sp;
+                currentNode.type = rtoken.type;
+                return currentNode;
+              }
             }
             break;
           }
@@ -192,6 +198,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     rtoken = rule.tokens[rp];
     stoken = stream[sp];
 
+    // rule satisfied
     if(rtoken === undefined) {
       currentNode.sp = sp;
       return currentNode;
@@ -253,7 +260,7 @@ function compileGrammar(grammar, tokenDef) {
       tokens = tokens.map(function(t) {
         var token = grammarToken(t);
         if(allValidKeys.indexOf(token.type) === -1 && token.type !== 'EOF') {
-          throw "Invalid token type in the grammar: " + token.type;
+          throw "Invalid token type used in the grammar: " + token.type;
         }
         return token;
       });

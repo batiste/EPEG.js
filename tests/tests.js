@@ -38,7 +38,7 @@ function assertComplete(input, g, log) {
     var r = EPEG.parse(input, g);
     var ts = EPEG.tokenize(input, g.tokenDef);
     if(log) {
-      console.log(r, t);
+      console.log(r, ts);
     }
 
     var msg = "Incomplete parsing on: " + input + ", leftover " + ts.slice(r.consumed).map(function(i){return i.value;});
@@ -57,7 +57,7 @@ function assertIncomplete(input, g, log) {
 
 // test left recursion
 assertComplete("1", gram);
-assertComplete("1 + 1", gram);;
+assertComplete("1 + 1", gram);
 assertComplete("1 + 1 - 1", gram);
 assertComplete("1 + 1 * 1 - 1 / 1 + 1", gram);
 assertIncomplete("1 + ", gram);
@@ -69,7 +69,7 @@ assertComplete("a,b,c,1", gram);
 // middle recursion
 assertComplete("(0)", gram);
 
-assertComplete("abc.der[0][0]", gram);
+assertIncomplete("abc.der[0][0]", gram);
 
 assertIncomplete("[0][0]", gram);
 
@@ -138,15 +138,15 @@ var grammar = {
   "START": {rules: ["LINE* EOF"]}
 };
 
-var gram = EPEG.compileGrammar(grammar, tokens);
+var gram2 = EPEG.compileGrammar(grammar, tokens);
 
 
-assertComplete("6\n6\n", gram);
-assertIncomplete("6\n6\n6", gram);
+assertComplete("6\n6\n", gram2);
+assertIncomplete("6\n6\n6", gram2);
 
-var parsed = EPEG.parse("6\n6\n", gram);
 
 QUnit.test( "Test that function calling with naming works", function( assert ) {
+  var parsed = EPEG.parse("6\n6\n", gram2);
   assert.equal( parsed.children[0].children.value, 6 );
 });
 
@@ -171,20 +171,31 @@ tokens = {
 grammar = {
   "MATH": {rules:["EXPR w? math w? EXPR"]},
   "PATH": {rules:["PATH dot name", "name"]},
-  "ASSIGN": {rules:["PATH w? assign w? EXPR"]},
+  "ASSIGN": {rules:["PATH assign number"]},
   "FUNC_PARAMS": {rules:["FUNC_PARAMS comma w? name", "name?"]},
   "FUNC_DEF": {rules:["func_def w name openP FUNC_PARAMS closeP"]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma w? EXPR", "EXPR?"]},
-  "FUNC_CALL": {rules:["name openP closeP"]},
-  "EXPR": {rules: ["FUNC_CALL", "EXPR openP EXPR closeP", "EXPR openB EXPR closeB", "MATH", "number", "name"]},
-  "STATEMENT": {rules:["ASSIGN", "FUNC_CALL", "FUNC_DEF"]},
+  "FUNC_CALL": {rules:["PATH openP FUNC_CALL_PARAMS closeP"]},
+  "EXPR": {rules: ["MATH", "EXPR openP EXPR closeP", "EXPR openB EXPR closeB", "FUNC_CALL", "number", "name"]},
+  "STATEMENT": {rules: ["ASSIGN", "EXPR", "FUNC_DEF"]},
   "LINE": {rules: ["STATEMENT newLine"]},
   "START": {rules: ["LINE* EOF"]}
 };
 
-gram = EPEG.compileGrammar(grammar, tokens);
+var gram3 = EPEG.compileGrammar(grammar, tokens);
 
-assertComplete("a = 1\n", gram);
-assertComplete("def test()\n", gram);
-assertComplete("test()\n", true, gram);
+assertComplete("a=1\n", gram3);
+assertComplete("def test(a, b, c)\n", gram3);
+assertIncomplete("def test(a, 1, c)\n", gram3);
+assertComplete("test()\n", gram3);
+assertComplete("test(1, 1+2, toto)\n", gram3);
+assertComplete("1 + 2 + 3\n", gram3);
+assertComplete("name + 1\n", gram3);
+assertComplete("name() + name() + 1\n", gram3);
+
+assertComplete("name + 1\ntoto() + 3\n", gram3);
+assertIncomplete("name + 1\ntoto() + 3", gram3);
+
+
+
 
