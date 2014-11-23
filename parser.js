@@ -262,6 +262,7 @@ function compileGrammar(grammar, tokenDef) {
 
     gram[key] = {rules: splitted_rules, funcs: line.funcs};
   }
+  gram["tokenDef"] = tokenDef;
   return gram;
 }
 
@@ -271,6 +272,9 @@ var memoization = {};
 
 function parse(stream, grammar) {
   var bestResult = {type:'START', sp:0, complete:false}, i, result;
+  if(typeof stream === 'string') {
+    stream = tokenize(stream, grammar.tokenDef);
+  }
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];
     memoization = {};
