@@ -133,8 +133,13 @@ function m1(p) {
   return p.n;
 }
 
+function m2(p) {
+  return p.$1;
+}
+
+
 var grammar = {
-  "LINE": {rules: ["n:number newLine"], funcs: [m1]},
+  "LINE": {rules: ["n:number newLine", "comma number newLine"], hooks: [m1, m2]},
   "START": {rules: ["LINE* EOF"]}
 };
 
@@ -149,6 +154,12 @@ QUnit.test( "Test that function calling with naming works", function( assert ) {
   var parsed = EPEG.parse("6\n6\n", gram2);
   assert.equal( parsed.children[0].children.value, 6 );
 });
+
+QUnit.test( "Test that function calling with $ works", function( assert ) {
+  var parsed = EPEG.parse(",12\n", gram2);
+  assert.equal( parsed.children[0].children.value, 12 );
+});
+
 
 
 tokens = {

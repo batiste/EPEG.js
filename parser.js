@@ -57,6 +57,7 @@ function copyToken(stoken, rtoken) {
 
 function createParams(tokens) {
   var params = {};
+  var j = 0;
   tokens.map(function(i) {
     if(i.name) {
       if(i.repeat) {
@@ -68,6 +69,8 @@ function createParams(tokens) {
         params[i.name] = i;
       }
     }
+    params['$'+j] = i;
+    j++;
   });
   return params;
 }
@@ -129,7 +132,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     if(grammar[rtoken.type]) {
 
       var expand_rules = grammar[rtoken.type].rules;
-      var funcs = grammar[rtoken.type].funcs;
+      var hooks = grammar[rtoken.type].hooks;
       result = false;
 
       var m = memoization[rtoken.type+';'+sp];
@@ -144,8 +147,8 @@ function evalRuleBody(grammar, rule, stream, pointer) {
           result = memoEval(grammar, r, stream, sp);
 
           if(result) {
-            if(funcs && funcs[j]) {
-              result.children = funcs[j](createParams(result.children));
+            if(hooks && hooks[j]) {
+              result.children = hooks[j](createParams(result.children));
             }
 
             memoization[r.key+';'+sp] = result;
@@ -267,7 +270,7 @@ function compileGrammar(grammar, tokenDef) {
       splitted_rules.push({key: key, index:j, tokens:tokens});
     }
 
-    gram[key] = {rules: splitted_rules, funcs: line.funcs};
+    gram[key] = {rules: splitted_rules, hooks: line.hooks};
   }
   gram.tokenDef = tokenDef;
   gram.parse = function(stream) {

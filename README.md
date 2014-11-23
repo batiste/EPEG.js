@@ -38,4 +38,43 @@ valid("1 + 1");
 valid("1 + 1 - 4");
 ```
 
+## Other features
+
+### Modifiers
+
+Every item in a rule/token in the grammar can use the modifiers * and ?. E.g using the tokensDef above:
+
+```javascript
+var grammarDef = {
+  "REPEAT": {rules: ["number w"]}
+  "START": {rules: ["REPEAT*"]}
+};
+
+parser = EPEG.compileGrammar(grammarDef, tokensDef);
+
+valid("1 2 3 ");
+valid("");
+valid("1"); // Should throw an erro as the white space is missing
+```
+
+### Named tokens and functions hooks
+
+Tokens parsed in the rules can be named. Each rules can have a hook function defined. This
+function is called at parse time with a map of each named parameter or in order with $0, $1, etc.
+
+```javascript
+
+function numberHook(params) {
+  return [params.num1, params.num2];
+}
+
+var grammarDef = {
+  "NAMED": {rules: ["num1:number w num2:number"], hooks: [numberHook]},
+  "START": {rules: [""]}
+};
+
+parser = EPEG.compileGrammar(grammarDef, tokensDef);
+
+valid("1 2");
+```
 
