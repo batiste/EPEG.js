@@ -9,26 +9,29 @@ and backtrack when necessary. I used this paper as inspiration:
 
 http://www.vpri.org/pdf/tr2007002_packrat.pdf
 
-Indirect left recursion is not implemented yet.
+Indirect recursion is not implemented yet.
 
 Example of a valid grammar
 
 ```javascript
-var tokens = {
+var tokensDef = {
   number: /^-?[0-9]+\.?[0-9]*/,
-  math: /^[-|\+|\*|/|%]/,
+  operator: /^[-|\+|\*|/|%]/,
   w: /^[ ]/
 };
 
-var grammar = {
-  "MATH": {rules:["MATH w math w number", "number w math w number"]},
+var grammarDef = {
+  "MATH": {rules:["MATH w operator w number", "number w operator w number"]},
   "START": {rules: ["MATH"]}
 };
 
-var gram = EPEG.compileGrammar(grammar, tokens);
+var parser = EPEG.compileGrammar(grammarDef, tokensDef);
+
 function valid(input) {
-  var stream = EPEG.tokenize(input, tokens);
-  return EPEG.parse(stream, gram);
+  var AST = parser.parse(stream);
+  if(!AST.complete) {
+    throw "Incomplete parsing"
+  }
 }
 
 valid("1 + 1");

@@ -35,7 +35,7 @@ function assertComplete(input, g, log) {
 
   QUnit.test( input, function( assert ) {
 
-    var r = EPEG.parse(input, g);
+    var r = g.parse(input);
     var ts = EPEG.tokenize(input, g.tokenDef);
     if(log) {
       console.log(r, ts);
@@ -49,7 +49,7 @@ function assertComplete(input, g, log) {
 
 function assertIncomplete(input, g, log) {
   QUnit.test( input, function( assert ) {
-    var r = EPEG.parse(input, g);
+    var r = g.parse(input);
     assert.ok( !r.complete, input );
   });
 }

@@ -269,7 +269,10 @@ function compileGrammar(grammar, tokenDef) {
 
     gram[key] = {rules: splitted_rules, funcs: line.funcs};
   }
-  gram["tokenDef"] = tokenDef;
+  gram.tokenDef = tokenDef;
+  gram.parse = function(stream) {
+    return parse(stream, gram);
+  };
   return gram;
 }
 
