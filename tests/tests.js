@@ -187,11 +187,11 @@ grammar = {
   "FUNC_DEF": {rules:["func_def w name openP FUNC_PARAMS closeP"]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma w? EXPR", "EXPR?"]},
   "FUNC_CALL": {rules:["PATH openP FUNC_CALL_PARAMS closeP"]},
+  "RIGHT_DOT": {rules:["PATH", "FUNC_CALL"]},
   "EXPR": {rules: [
     "MATH",
     "openP EXPR closeP",
-    "EXPR dot PATH",
-    "EXPR dot FUNC_CALL",
+    "EXPR dot EXPR",
     "EXPR openB EXPR closeB",
     "FUNC_CALL",
     "number",
@@ -218,9 +218,12 @@ assertIncomplete("name + 1\ntoto() + 3", gram3);
 assertComplete("hello.path = 1 + 1 + (hello + 2)\n", gram3);
 
 
-assertComplete("hello[0][0][0][0][0].hello.test()\n", gram3);
-assertComplete("hello().test[0]\n", gram3);
+assertComplete("hello[0][0][0].hello.test()[0]\n", gram3);
+assertComplete("hello().test[0].hello().hello[0]\n", gram3);
+
+assertComplete("hello.hello()\n", gram3);
 
 
+assertComplete("hello.hello2.hello3.test\n", gram3);
 
 
