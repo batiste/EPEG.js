@@ -72,7 +72,7 @@ function numberHook(params) {
 
 var grammarDef = {
   "NAMED": {rules: ["num1:number ws:w num2:number"], hooks: [numberHook]},
-  "START": {rules: [""]}
+  "START": {rules: ["NAMED"]}
 };
 
 parser = EPEG.compileGrammar(grammarDef, tokensDef);
