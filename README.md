@@ -21,11 +21,12 @@ var tokensDef = {
 };
 
 var grammarDef = {
-  "START": {rules: ["MATH EOF"]}, // You need to start you grammar with the START rule.
-                                  // The special EOF token is always added automatically by the token parser.
+  // You need to start you grammar with the START rule.
+  "START": {rules: ["MATH EOF"]},
+  // The End Of File token is added automatically by the token parser.
   "MATH": {rules: [
     "MATH w operator w number",
-    "number w operator w number"
+    "number"
   ]}
 };
 
