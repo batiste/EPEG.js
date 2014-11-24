@@ -25,7 +25,7 @@ var grammarDef = {
   "START": {rules: ["MATH EOF"]},
   // The End Of File token is added automatically by the token parser.
   "MATH": {rules: [
-    "MATH w operator w number",
+    "MATH w operator w number", // This rule is left recursive
     "number"
   ]}
 };
