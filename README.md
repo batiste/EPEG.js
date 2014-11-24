@@ -62,11 +62,13 @@ If a regexp is not the right tool for the job feel you can use a function.
 The contract is that you need to return the matched string. This string
 has to be at the start of the input.
 
+```javascript
 tokens = {
   isHello: function(input) { if(input == 'hello'){ return input; } },
   w: /^[ ]/,
   n: /^[a-z]+/
 };
+```
 
 ### Modifiers
 
