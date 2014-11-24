@@ -58,7 +58,7 @@ This parse object only has the parse method that return an Abstract Syntax Tree.
 
 ### Tokenizer function
 
-If a regexp is not the right tool for the job feel you can use a function.
+If a regexp is not the enough to find a token you can use a function.
 The contract is that you need to return the matched string. This string
 has to be at the start of the input.
 
