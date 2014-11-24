@@ -21,8 +21,12 @@ var tokensDef = {
 };
 
 var grammarDef = {
-  "MATH": {rules:["MATH w operator w number", "number w operator w number"]},
-  "START": {rules: ["MATH"]}
+  "START": {rules: ["MATH EOF"]}, // You need to start you grammar with the START rule.
+                                  // The special EOF token is always added automatically by the token parser.
+  "MATH": {rules: [
+    "MATH w operator w number",
+    "number w operator w number"
+  ]}
 };
 
 var parser = EPEG.compileGrammar(grammarDef, tokensDef);
@@ -38,7 +42,31 @@ valid("1 + 1");
 valid("1 + 1 - 4");
 ```
 
+## Public API
+
+There is only public function that return a parser object:
+
+```javascript
+var parser = EPEG.compileGrammar(grammar definition, tokens definition);
+
+parser.parse(input);
+```
+
+This parse object only has the parse method that return an Abstract Syntax Tree.
+
 ## Other features
+
+### Tokenizer function
+
+If a regexp is not the right tool for the job feel you can use a function.
+The contract is that you need to return the matched string. This string
+has to be at the start of the input.
+
+tokens = {
+  isHello: function(input) { if(input == 'hello'){ return input; } },
+  w: /^[ ]/,
+  n: /^[a-z]+/
+};
 
 ### Modifiers
 
@@ -47,7 +75,7 @@ Every item in a rule/token in the grammar can use the modifiers * and ?. E.g usi
 ```javascript
 var grammarDef = {
   "REPEAT": {rules: ["number w"]}
-  "START": {rules: ["REPEAT*"]}
+  "START": {rules: ["REPEAT* EOF"]}
 };
 
 parser = EPEG.compileGrammar(grammarDef, tokensDef);
@@ -60,19 +88,22 @@ valid("1"); // Should throw an error as the white space is missing
 ### Named tokens and functions hooks
 
 Tokens parsed in the rules can be named. Each rules can have a hook function defined. This
-function is called at parse time with a map of each named parameter or in order with $0, $1, etc.
+function is called at parse time with a single parameter being the map of each named parameter.
+This map also contains all the matched tokens in order with $0, $1, etc.
 
 ```javascript
 
 function numberHook(params) {
-  // we reject the white space params.ws here
+  // We reject the white space params.ws here
   // it will not apear in the AST
   return [params.num1, params.num2];
+  // Could also have been written
+  return [params.$0, params.$2];
 }
 
 var grammarDef = {
   "NAMED": {rules: ["num1:number ws:w num2:number"], hooks: [numberHook]},
-  "START": {rules: ["NAMED"]}
+  "START": {rules: ["NAMED EOF"]}
 };
 
 parser = EPEG.compileGrammar(grammarDef, tokensDef);

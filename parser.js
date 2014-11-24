@@ -20,8 +20,15 @@ function tokenize(input, tokens) {
     candidate = null;
     for(i=0; i<keys.length; i++) {
       var key = keys[i];
-      var token = tokens[key];
-      var match = input.match(token);
+      var token = tokens[key], match;
+      if(typeof token === 'function') {
+        match = token(input) || null;
+        if(match !== null) {
+          match = [match];
+        }
+      } else {
+        match = input.match(token);
+      }
       if(match !== null) {
         // the algo is greedy
         if(candidate && candidate.length >= match[0].length) {
@@ -121,7 +128,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
   var sp = pointer; // stream pointer
   var rp = 0; // rule pointer
   var j, result;
-  var currentNode = {type: rule.key, children:[], sp:pointer};
+  var currentNode = {type: rule.key, children:[], sp:pointer, name:rule.name};
 
   var rtoken = rule.tokens[rp];
   var stoken = stream[sp];
@@ -170,7 +177,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
       if(result) {
         sp = result.sp;
-        currentNode.children.push({type: rtoken.type, children:result.children, sp:result.sp});
+        currentNode.children.push({type: rtoken.type, children:result.children, sp:result.sp, name:rtoken.name});
         if(rtoken.repeat === false || rtoken.repeat === '?') {
           rp++;
         }
@@ -244,7 +251,6 @@ function grammarToken(token) {
     'repeat': repeat
   };
 }
-
 
 function compileGrammar(grammar, tokenDef) {
   var keys = Object.keys(grammar), i, j;

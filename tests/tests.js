@@ -187,7 +187,6 @@ grammar = {
   "FUNC_DEF": {rules:["func_def w name openP FUNC_PARAMS closeP"]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma w? EXPR", "EXPR?"]},
   "FUNC_CALL": {rules:["PATH openP FUNC_CALL_PARAMS closeP"]},
-  "RIGHT_DOT": {rules:["PATH", "FUNC_CALL"]},
   "EXPR": {rules: [
     "MATH",
     "EXPR dot EXPR",
@@ -197,7 +196,7 @@ grammar = {
     "number",
     "PATH"]},
   "STATEMENT": {rules: ["ASSIGN", "EXPR", "FUNC_DEF"]},
-  "LINE": {rules: ["STATEMENT newLine"]},
+  "LINE": {rules: ["w* STATEMENT newLine"]},
   "START": {rules: ["LINE* EOF"]}
 };
 
@@ -227,5 +226,28 @@ assertComplete("hello.hello()\n", gram3);
 assertComplete("hello.hello.test.toto\n", gram3);
 
 assertComplete("(1 + 1).test()\n", gram3);
+
+assertComplete("(1).hello()\n", gram3);
+
+assertComplete("hello.5\n", gram3);
+
+assertComplete("def test(a, b)\n  a = 1\nb = 2\ntest(1, 2)\n", gram3);
+
+
+tokens = {
+  isHello: function(input) { if(input == 'hello'){ return input; } },
+  w: /^[ ]/,
+  n: /^[a-z]+/,
+};
+
+grammar = {
+  "START": {rules: ["isHello EOF"]}
+};
+
+var gram4 = EPEG.compileGrammar(grammar, tokens);
+
+assertComplete("hello", gram4, true);
+assertIncomplete(" hello", gram4);
+assertIncomplete("hello ", gram4);
 
 

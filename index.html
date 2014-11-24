@@ -1,54 +1,82 @@
 <html>
 <head>
+<style>
+body, html {
+  font-weight:16px;
+}
+textarea {
+  width:450px;
+  height:600px;
+  font-size:14px;
+}
+</style>
 </head>
 <body>
+
+<textarea id="in">
+def myFunc(a, b, c)
+myFunc(1 + 1, "test")
+</textarea>
+
+<textarea id="out"></textarea>
+
 <script src='parser.js'></script>
 <script>
 
 // token are matched in order of declaration
 // TODO: add functions
 var tokenDef = {
+  function_def: /^def/,
   name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
   comparison: /^(<=|>=|<|>|===|==)/,
   assign: /^(\+=|-=|=)/,
   number: /^-?[0-9]+\.?[0-9]*/,
-  function_def: /^def/,
   _if: /^if/,
   _else: /^else/,
   _elseif: /^elseif/,
-  comma: /^,/,
+  comma: /^\,/,
   dot: /^\./,
   for_loop: /^for/,
   open_par: /^\(/,
   close_par: /^\)/,
+  open_bra: /^\[/,
+  close_bra: /^\]/,
   math: /^[-|\+|\*|/|%]/,
   newline: /^(\r?\n|$)/,
   W: /^[ ]/,
   string: /^"([^"\\]*(\\.[^"\\]*)*)"/,
 };
 
-var grammar = {
-  "VALUE": {rules:["number", "string"], consume:1},
-  "PARAMS": {rules:["n:name comma W"],
-    func:function(params) { return params.n.value; }
+var grammarDef = {
+  "VALUE": {rules:["number", "string"]},
+  "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
+  "FUNC_DEF": {rules:[
+      "function_def open_par p:FUNC_DEF_PARAMS? close_par",
+      "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par"
+    ]
   },
-  "FUNC": {rules:[
-      "function_def open_par p:PARAMS* close_par",
-      "function_def W fn:name open_par p:PARAMS* close_par"
-    ],
-    func:function(params) { return params; }
-  },
-  "MATH": {rules:["VALUE W math W VALUE"]},
-  "VARNAME": {rules:["name dot VARNAME", "name"]},
-  "ASSIGN": {rules:["name W assign W EXPR"]},
-  "COMPARAISON": {rules:["EXPR W comparison W EXPR"]},
-  "EXPR": {rules:["MATH", "VALUE", "COMPARAISON", "open_par EXPR close_par"]},
-  "STATEMENT": {rules:["EXPR", "VALUE", "ASSIGN", "FUNC"]},
-  "LINE": {rules:["w:W* st:STATEMENT newline"],
-    func:function(params) { return {value:[indentLevel(params.w), params.st]}; }
-  },
-  "START": {rules:["LINE*"]},
+  "MATH": {rules:["e1:EXPR W? op:math W? e2:EXPR"], hooks:[function(p){ return [p.op, p.e1, p.e2]; }]},
+  "PATH": {rules:["PATH dot name", "PATH open_bra number close_bra", "name"]},
+  "ASSIGN": {rules:["PATH W? assign W? EXPR"]},
+  "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
+  "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS close_par"]},
+  "EXPR": {rules: [
+    "MATH",
+    "EXPR W comparison W EXPR",
+    "EXPR dot EXPR",
+    "open_par EXPR open_par",
+    //"EXPR open_bra EXPR close_bra",
+    "FUNC_CALL",
+    "number",
+    "string",
+    "name",
+    "PATH"]},
+  "STATEMENT": {rules:["ASSIGN", "FUNC_DEF", "EXPR"]},
+  "LINE": {rules:["w:W* st:STATEMENT newline", "w:W* newline"]},
+  "START": {rules:["LINE* EOF"]},
 };
+
+window.onload = function() {
 
 var last = 0;
 function indentLevel(w) {
@@ -65,26 +93,40 @@ function indentLevel(w) {
   return ['SAMEDENT', l];
 }
 
-var gram;
+var gram = EPEG.compileGrammar(grammarDef, tokenDef);
 
-window.onload = function() {
-
-gram = EPEG.compileGrammar(grammar, tokenDef);
-
-};
-
-function assertTruthy(a, msg) {
-  if(!a) {
-    throw "Not thruty " + msg;
+function assertComplete(input, g) {
+  var r = g.parse(input);
+  if(!r.complete) {
+    var ts = EPEG.tokenize(input, g.tokenDef);
+    console.log("Incomplete parsing on: " + input + ", leftover ", r, ts, ts.slice(r.consumed).map(function(i){return i.value;}));
   }
 }
 
-function valid(str) {
-  var tokens = EPEG.tokenize(str, tokenDef);
-  var s = EPEG.parse(tokens, gram);
-  assertTruthy(s, str);
-  return s;
+
+assertComplete("1 + 1 + 3 - 8 / 3 * 2\n", gram);
+assertComplete("hello = 1\n", gram);
+assertComplete("def test()\n", gram);
+assertComplete("def test(a, b)\n", gram);
+assertComplete("def(a, b)\n", gram);
+assertComplete("test(a + 1, 2 + b) - 2\n", gram);
+assertComplete('"hello workd" + 1\n', gram);
+
+var din = document.getElementById('in');
+var dout = document.getElementById('out');
+
+
+din.onkeyup = function() {
+  outit();
+};
+
+function outit() {
+  var r = gram.parse(din.value+'\n');
+  dout.value = JSON.stringify(r, false, 2);
 }
+
+outit();
+
 
 function generateCode(node) {
   if(typeof node == "string") {
@@ -100,5 +142,7 @@ function generateCode(node) {
   }
   return str;
 }
+
+};
 
 </script>
