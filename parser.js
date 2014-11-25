@@ -30,12 +30,10 @@ function tokenize(input, tokens) {
         match = input.match(token);
       }
       if(match !== null) {
-        // the algo is greedy
-        if(candidate && candidate.length >= match[0].length) {
-          continue;
-        }
+        // the algo is not greedy
         candidate = match[0];
         candidate_key = key;
+        break;
       }
     }
     if(candidate && candidate.length > 0) {

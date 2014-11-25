@@ -3,25 +3,76 @@
 <style>
 body, html {
   font-weight:16px;
+  font-family: Helvetica neue, sans-serif;
 }
 textarea {
-  width:450px;
+  width:95%;
   height:600px;
   font-size:14px;
+}
+div.col {
+  float:left;
+  width:33%;
+}
+h1, h2, h3 {
+  margin: 0.4em 0;
 }
 </style>
 </head>
 <body>
+<h1>
+EPEG.js demo
+</h1>
 
-<textarea id="in">
-def myFunc(a, b, c)
-myFunc(1 + 1, "test")
-</textarea>
+<div style="clear:both">
+<div class="col">
+  <h2>Input language</h2>
+<textarea id="in">1 + 1
+def myFunc(b)
+  b = 3
 
+b = 10</textarea>
+</div>
+<div class="col">
+<h2>AST</h2>
 <textarea id="out"></textarea>
+</div>
+
+<div class="col">
+<h2>Output language</h2>
+<textarea id="code"></textarea>
+</div>
+</div>
+
+<h2>Grammar definition</h2>
+
+<pre id="grammarOut"></pre>
 
 <script src='parser.js'></script>
 <script>
+
+
+var lastLevel = 0;
+function indentType(l) {
+  if(l > lastLevel) {
+    return 'indent';
+  }
+  if(l < lastLevel) {
+    return 'dedent';
+  }
+  return 'samedent';
+}
+
+function dent(dentType) {
+  return function _dent(input) {
+    var m = input.match(/^\n[ ]*/);
+    if(m && indentType(m[0].length - 1) === dentType) {
+      lastLevel = m[0].length - 1;
+      return m[0];
+    }
+  };
+}
+
 
 // token are matched in order of declaration
 // TODO: add functions
@@ -42,22 +93,34 @@ var tokenDef = {
   open_bra: /^\[/,
   close_bra: /^\]/,
   math: /^[-|\+|\*|/|%]/,
+  samedent: dent('samedent'),
+  dedent: dent('dedent'),
+  indent: dent('indent'),
   newline: /^(\r?\n|$)/,
   W: /^[ ]/,
   string: /^"([^"\\]*(\\.[^"\\]*)*)"/,
 };
 
+function f_def(params) {
+  return [params.fn, params.p, params.b];
+}
+
 var grammarDef = {
+  "START": {rules:["LINE* EOF"]},
+  "LINE": {rules:["STATEMENT samedent"]},
+  "STATEMENT": {rules:["ASSIGN", "FUNC_DEF", "EXPR"]},
   "VALUE": {rules:["number", "string"]},
+  "BLOCK": {rules: ["indent LINE* STATEMENT? dedent"]},
   "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
   "FUNC_DEF": {rules:[
-      "function_def open_par p:FUNC_DEF_PARAMS? close_par",
-      "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par"
-    ]
+      "function_def open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?",
+      "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?"
+    ],
+    hooks: [f_def, f_def]
   },
-  "MATH": {rules:["e1:EXPR W? op:math W? e2:EXPR"], hooks:[function(p){ return [p.op, p.e1, p.e2]; }]},
+  "MATH": {rules:["e1:EXPR W? op:math W? e2:EXPR"]},
   "PATH": {rules:["PATH dot name", "PATH open_bra number close_bra", "name"]},
-  "ASSIGN": {rules:["PATH W? assign W? EXPR"]},
+  "ASSIGN": {rules:["left:PATH W? op:assign W? right:EXPR"], hooks:[function(p){return p;}]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS close_par"]},
   "EXPR": {rules: [
@@ -71,34 +134,19 @@ var grammarDef = {
     "string",
     "name",
     "PATH"]},
-  "STATEMENT": {rules:["ASSIGN", "FUNC_DEF", "EXPR"]},
-  "LINE": {rules:["w:W* st:STATEMENT newline", "w:W* newline"]},
-  "START": {rules:["LINE* EOF"]},
 };
 
 window.onload = function() {
 
-var last = 0;
-function indentLevel(w) {
-  var l = (w && w.length) || 0;
-  if(l > last) {
-    last = l;
-    return ['INDENT', l];
-  }
-  if(l < last) {
-    last = l;
-    return ['DEDENT', l];
-  }
-  last = l;
-  return ['SAMEDENT', l];
-}
-
 var gram = EPEG.compileGrammar(grammarDef, tokenDef);
 
 function assertComplete(input, g) {
+  lastLevel = 0;
   var r = g.parse(input);
   if(!r.complete) {
+    lastLevel = 0;
     var ts = EPEG.tokenize(input, g.tokenDef);
+    lastLevel = 0;
     console.log("Incomplete parsing on: " + input + ", leftover ", r, ts, ts.slice(r.consumed).map(function(i){return i.value;}));
   }
 }
@@ -112,36 +160,67 @@ assertComplete("def(a, b)\n", gram);
 assertComplete("test(a + 1, 2 + b) - 2\n", gram);
 assertComplete('"hello workd" + 1\n', gram);
 
+assertComplete("def test()\n  1\n\n", gram);
+
 var din = document.getElementById('in');
 var dout = document.getElementById('out');
-
+var code = document.getElementById('code');
+var gOut = document.getElementById('grammarOut');
+gOut.textContent = JSON.stringify(grammarDef, false, 2);
 
 din.onkeyup = function() {
   outit();
 };
 
 function outit() {
+  lastLevel = 0;
   var r = gram.parse(din.value+'\n');
+  lastLevel = 0;
+  code.value = generateCode(r);
   dout.value = JSON.stringify(r, false, 2);
 }
 
-outit();
-
+var backend = {
+  'FUNC_DEF': function(node) {
+    var name = "";
+    if(node.children[0]) {
+      name = node.children[0].value;
+    }
+    str = "function " + name + "(";
+    if(node.children[1]) {
+      str += generateCode(node.children[1]);
+    }
+    str += ') {';
+    if(node.children[2]) {
+      str += generateCode(node.children[2]);
+    }
+    return str + "}\n";
+  },
+  'ASSIGN': function(node) {
+    return 'var '+generateCode(node.children.left) + node.children.op.value + generateCode(node.children.right);
+  }
+};
 
 function generateCode(node) {
-  if(typeof node == "string") {
-    return node;
+  if(!node) {
   }
-  if(typeof node.value == "string") {
+  if(node.value !== undefined) {
     return node.value;
   }
-  var i;
-  str = "";// + node.type + " ";
-  for(i=0;i<node.value.length; i++) {
-    str += generateCode(node.value[i]);
+  var str = "", i;
+  if(backend[node.type]) {
+    return backend[node.type](node);
+  }
+  if(!node.children) {
+    return '';
+  }
+  for(i=0;i<node.children.length; i++) {
+    str += generateCode(node.children[i]);
   }
   return str;
 }
+
+outit();
 
 };
 
