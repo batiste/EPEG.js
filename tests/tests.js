@@ -67,7 +67,7 @@ assertIncomplete("+ 1", gram);
 assertComplete("a,b,c,1", gram);
 
 // middle recursion
-assertComplete("1 + (0)", gram);
+assertComplete("1 + (0)", gram, true);
 
 assertIncomplete("abc.der[0][0]", gram);
 
@@ -249,5 +249,28 @@ var gram4 = EPEG.compileGrammar(grammar, tokens);
 assertComplete("hello", gram4, true);
 assertIncomplete(" hello", gram4);
 assertIncomplete("hello ", gram4);
+
+
+tokens = {
+  number: /^[0-9]/,
+  a: /^a/,
+  b: /^b/,
+};
+
+grammar = {
+  "EXPR": {rules: ["a number a", "EXPR b EXPR", "number"]},
+  "START": {rules: ["EXPR EOF"]}
+};
+
+var gram5 = EPEG.compileGrammar(grammar, tokens);
+
+assertComplete("1b1", gram5);
+assertComplete("a1a", gram5);
+assertComplete("1ba1a", gram5);
+assertComplete("a1ab1", gram5);
+assertComplete("a1aba2a", gram5);
+
+
+
 
 

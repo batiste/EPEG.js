@@ -131,7 +131,6 @@ function evalRuleBody(grammar, rule, stream, pointer) {
   var rtoken = rule.tokens[rp];
   var stoken = stream[sp];
 
-
   while(rtoken && stoken) {
 
     if(grammar[rtoken.type]) {
