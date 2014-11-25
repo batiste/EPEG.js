@@ -124,10 +124,10 @@ var grammarDef = {
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS close_par"]},
   "EXPR": {rules: [
+    "open_par EXPR open_par",
     "MATH",
     "EXPR W comparison W EXPR",
     "EXPR dot EXPR",
-    "open_par EXPR open_par",
     //"EXPR open_bra EXPR close_bra",
     "FUNC_CALL",
     "number",
@@ -161,6 +161,7 @@ assertComplete("test(a + 1, 2 + b) - 2\n", gram);
 assertComplete('"hello workd" + 1\n', gram);
 
 assertComplete("def test()\n  1\n\n", gram);
+assertComplete('(1 + 1)\n', gram);
 
 var din = document.getElementById('in');
 var dout = document.getElementById('out');

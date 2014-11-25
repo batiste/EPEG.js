@@ -67,7 +67,7 @@ assertIncomplete("+ 1", gram);
 assertComplete("a,b,c,1", gram);
 
 // middle recursion
-assertComplete("(0)", gram);
+assertComplete("1 + (0)", gram);
 
 assertIncomplete("abc.der[0][0]", gram);
 
