@@ -67,8 +67,8 @@ assertIncomplete("+ 1", gram);
 assertComplete("a,b,c,1", gram);
 
 // middle recursion
-assertComplete("(0) + 1", gram, true);
-assertComplete("1 + (0)", gram, true);
+assertComplete("(0).(9)", gram, true);
+assertComplete("(9).((0))", gram, true);
 
 assertIncomplete("abc.der[0][0]", gram);
 
@@ -294,6 +294,7 @@ var gram6 = EPEG.compileGrammar(grammar, tokens);
 assertComplete("0", gram6);
 assertComplete("(0)", gram6);
 assertComplete("((0))", gram6);
+assertComplete("(((9)))", gram6);
 
 
 
