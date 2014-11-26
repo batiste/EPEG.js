@@ -67,10 +67,10 @@ assertIncomplete("+ 1", gram);
 assertComplete("a,b,c,1", gram);
 
 // middle recursion
-assertComplete("(0).(9)", gram, true);
-assertComplete("(9).((0))", gram, true);
+assertComplete("(0).(9)", gram);
+assertComplete("(9).((0))", gram);
 
-assertIncomplete("abc.der[0][0]", gram);
+assertIncomplete("abc.der.[0][0]", gram);
 
 assertIncomplete("[0][0]", gram);
 
