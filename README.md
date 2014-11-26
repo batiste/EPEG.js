@@ -11,6 +11,8 @@ http://www.vpri.org/pdf/tr2007002_packrat.pdf
 
 Indirect recursion is not implemented yet.
 
+Demo http://batiste.info/EPEG.js/
+
 Example of a valid grammar
 
 ```javascript

@@ -49,6 +49,10 @@ b = 10</textarea>
 
 <pre id="grammarOut"></pre>
 
+<h2>Tokens definition</h2>
+
+<pre id="tokenOut"></pre>
+
 <script src='parser.js'></script>
 <script>
 
@@ -175,6 +179,8 @@ var dout = document.getElementById('out');
 var code = document.getElementById('code');
 var gOut = document.getElementById('grammarOut');
 gOut.textContent = JSON.stringify(grammarDef, false, 2);
+var tOut = document.getElementById('tokenOut');
+tOut.textContent = JSON.stringify(tokenDef, false, 2);
 
 din.onkeyup = function() {
   outit();
