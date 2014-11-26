@@ -79,7 +79,7 @@ function dent(dentType) {
 var tokenDef = {
   function_def: /^def/,
   name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
-  comparison: /^(<=|>=|<|>|===|==)/,
+  comparison: /^(<=|>=|<|>|===|!=|==)/,
   assign: /^(\+=|-=|=)/,
   number: /^-?[0-9]+\.?[0-9]*/,
   _if: /^if/,
@@ -106,8 +106,8 @@ function f_def(params) {
 }
 
 var grammarDef = {
-  "START": {rules:["LINE* EOF"]},
-  "LINE": {rules:["STATEMENT samedent"]},
+  "START": {rules:["LINE"]},
+  "LINE": {rules:["STATEMENT samedent LINE", "STATEMENT EOF"]},
   "STATEMENT": {rules:["ASSIGN", "FUNC_DEF", "EXPR"]},
   "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE* STATEMENT? dedent"]},
@@ -124,11 +124,11 @@ var grammarDef = {
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS close_par"]},
   "EXPR": {rules: [
-    "open_par EXPR open_par",
     "MATH",
+    "open_par EXPR open_par",
     "EXPR W comparison W EXPR",
     "EXPR dot EXPR",
-    //"EXPR open_bra EXPR close_bra",
+    "EXPR open_bra EXPR close_bra",
     "FUNC_CALL",
     "number",
     "string",
@@ -154,6 +154,8 @@ function assertComplete(input, g) {
 
 assertComplete("1 + 1 + 3 - 8 / 3 * 2\n", gram);
 assertComplete("hello = 1\n", gram);
+assertComplete("1 == 1\n", gram);
+assertComplete("hello != toto\n", gram);
 assertComplete("def test()\n", gram);
 assertComplete("def test(a, b)\n", gram);
 assertComplete("def(a, b)\n", gram);
@@ -161,6 +163,7 @@ assertComplete("test(a + 1, 2 + b) - 2\n", gram);
 assertComplete('"hello workd" + 1\n', gram);
 
 assertComplete("def test()\n  1\n\n", gram);
+assertComplete('(1)\n', gram);
 assertComplete('(1 + 1)\n', gram);
 
 var din = document.getElementById('in');
@@ -175,7 +178,7 @@ din.onkeyup = function() {
 
 function outit() {
   lastLevel = 0;
-  var r = gram.parse(din.value+'\n');
+  var r = gram.parse(din.value);
   lastLevel = 0;
   code.value = generateCode(r);
   dout.value = JSON.stringify(r, false, 2);
