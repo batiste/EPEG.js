@@ -13,6 +13,8 @@ Indirect recursion is not implemented yet.
 
 Demo http://batiste.info/EPEG.js/
 
+Tests http://batiste.info/EPEG.js/tests/tests.html
+
 Example of a valid grammar
 
 ```javascript
