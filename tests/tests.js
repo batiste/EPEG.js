@@ -25,7 +25,7 @@ var grammar = {
   "FUNC_DEF": {rules:["func_def w name openP FUNC_PARAMS closeP"]},
   "COMMA_SEPARATED_EXPR": {rules:["COMMA_SEPARATED_EXPR comma w EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["PATH openP FUNC_PARAMS closeP"]},
-  "EXPR": {rules:["name comma EXPR", "openP EXPR closeP", "PATH openB EXPR closeB", "PATH", "TERM"]},
+  "EXPR": {rules:["name comma EXPR", "EXPR dot EXPR", "openP EXPR closeP", "EXPR openB EXPR closeB", "PATH", "TERM"]},
   "START": {rules: ["FUNC_CALL EOF", "ASSIGN EOF", "EXPR EOF", "FUNC_DEF EOF"]}
 };
 
@@ -67,6 +67,7 @@ assertIncomplete("+ 1", gram);
 assertComplete("a,b,c,1", gram);
 
 // middle recursion
+assertComplete("(0) + 1", gram, true);
 assertComplete("1 + (0)", gram, true);
 
 assertIncomplete("abc.der[0][0]", gram);
@@ -255,21 +256,44 @@ tokens = {
   number: /^[0-9]/,
   a: /^a/,
   b: /^b/,
+  c: /^c/,
 };
 
 grammar = {
-  "EXPR": {rules: ["a number a", "EXPR b EXPR", "number"]},
+  "EXPR": {rules: [ "EXPR b EXPR", "EXPR c EXPR", "a EXPR a", "number"]},
   "START": {rules: ["EXPR EOF"]}
 };
 
 var gram5 = EPEG.compileGrammar(grammar, tokens);
 
 assertComplete("1b1", gram5);
+assertComplete("1c1", gram5);
 assertComplete("a1a", gram5);
 assertComplete("1ba1a", gram5);
 assertComplete("a1ab1", gram5);
 assertComplete("a1aba2a", gram5);
+assertComplete("1b1c1", gram5);
+assertComplete("1c1b1", gram5);
 
+
+tokens = {
+  number: /^[0-9]/,
+  openP: /^\(/,
+  closeP: /^\)/,
+};
+
+
+grammar = {
+  "EXPR": {rules:["openP EXPR closeP", "number"]},
+  "START": {rules: ["EXPR EOF"]}
+};
+
+var gram6 = EPEG.compileGrammar(grammar, tokens);
+
+
+assertComplete("0", gram6);
+assertComplete("(0)", gram6);
+assertComplete("((0))", gram6);
 
 
 

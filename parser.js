@@ -90,8 +90,10 @@ function growLR(grammar, rule, stream, pos, memo) {
     if(result === false || result.sp <= memo.sp) {
       return progress;
     }
+
     memo.children = result.children;
     memo.sp = result.sp;
+    memo.start = result.start;
     progress = memo;
   }
   return progress;
@@ -126,7 +128,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
   var sp = pointer; // stream pointer
   var rp = 0; // rule pointer
   var j, result;
-  var currentNode = {type: rule.key, children:[], sp:pointer, name:rule.name};
+  var currentNode = {type: rule.key, children:[], start:pointer, name:rule.name};
 
   var rtoken = rule.tokens[rp];
   var stoken = stream[sp];
@@ -155,17 +157,13 @@ function evalRuleBody(grammar, rule, stream, pointer) {
               result.children = hooks[j](createParams(result.children));
             }
 
+            //if(!memoization[r.key+';'+sp])
             memoization[r.key+';'+sp] = result;
-            // detect possible recursion, only works for the same rule type
-            if(r.key === rule.key) {
-              var n_result = growLR(grammar, rule, stream, pointer, result);
 
-              if(n_result !== false) {
-                currentNode.children = n_result.children;
-                currentNode.sp = n_result.sp;
-                currentNode.type = rtoken.type;
-                return currentNode;
-              }
+            var n_result = growLR(grammar, rule, stream, sp, result);
+
+            if(n_result !== false) {
+              return n_result;
             }
             break;
           }
@@ -189,10 +187,10 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
       if(stoken.type === rtoken.type) {
         currentNode.children.push(copyToken(stoken, rtoken));
-        sp++;
         if(rtoken.repeat === false || rtoken.repeat === '?') {
           rp++;
         }
+        sp++;
       } else {
         if(rtoken.repeat === false) {
           return false;
@@ -208,12 +206,15 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     // rule satisfied
     if(rtoken === undefined) {
       currentNode.sp = sp;
+      currentNode.rp = rp;
       return currentNode;
     }
 
+    // no more tokens
     if(stoken === undefined) {
       if(rtoken.repeat !== false) {
-        currentNode.sp = sp;
+        currentNode.sp = sp - 1;
+        currentNode.rp = rp;
         return currentNode;
       }
       return false;
