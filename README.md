@@ -49,7 +49,7 @@ valid("1 + 1 - 4");
 
 ## Public API
 
-There is only public function that return a parser object:
+The EPEG module expose a public function that return a parser object:
 
 ```javascript
 var parser = EPEG.compileGrammar(grammar definition, tokens definition);
@@ -57,13 +57,13 @@ var parser = EPEG.compileGrammar(grammar definition, tokens definition);
 parser.parse(input);
 ```
 
-This parse object only has the parse method that return an Abstract Syntax Tree.
+This parse object only has the a parse method that return an Abstract Syntax Tree.
 
 ## Other features
 
 ### Tokenizer function
 
-If a regexp is not the enough to find a token you can use a function.
+If a regexp is not enough to find a token you can use a function.
 The contract is that you need to return the matched string. This string
 has to be at the start of the input.
 
