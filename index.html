@@ -30,9 +30,12 @@ EPEG.js demo
 <textarea id="in">
 a = 1
 a = 2
+b = 2
 
-def myFunc(a, b, c)
+def myFunc(p1, p2)
   a = 3
+  b := 2
+  b = 5
   return b
 
 if 1 == 1
@@ -99,7 +102,7 @@ var tokenDef = {
   math_operators: /^(\+\+|\-\-)/,
   binary_operators: /^(\&\&|\|\||\&|\||\<\<|\>\>)/,
   comparison: /^(<=|>=|<|>|===|!=|==)/,
-  assign: /^(\+=|-=|=)/,
+  assign: /^(\+=|-=|=|:=)/,
   number: /^-?[0-9]+\.?[0-9]*/,
   comma: /^\,/,
   dot: /^\./,
@@ -242,15 +245,20 @@ var backend = {
   },
   'ASSIGN': function(node) {
     var prefix = "";
+    var op = node.children.op.value;
     var ns = namespaces[namespaces.length -1];
     if(node.children.left.children[0].type === 'name') {
       var ch = node.children.left.children[0];
       if(ns[ch.value] === undefined) {
-        prefix = 'var ';
+        if(op == ':=') {
+          op = '=';
+        } else {
+          prefix = 'var ';
+        }
         ns[ch.value] = true;
       }
     }
-    return prefix+generateCode(node.children.left) + node.children.op.value + generateCode(node.children.right) + ';';
+    return prefix+generateCode(node.children.left) + op + generateCode(node.children.right) + ';';
   },
   'IF_DEF': function(node) {
     var str = '';
