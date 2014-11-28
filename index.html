@@ -131,12 +131,13 @@ function if_def(params) {
 }
 
 var grammarDef = {
-  "START": {rules:["LINE"]},
-  "LINE": {rules:["STATEMENT? samedent LINE", "EOF", "STATEMENT EOF"]},
-  "STATEMENT": {rules:["ASSIGN", "FUNC_DEF", "EXPR", "IF_DEF"]},
+  "START": {rules:["L"]},
+  "L": {rules:["LINE* EOF"]},
+  "LINE": {rules:["STATEMENT samedent", "samedent"]},
+  "STATEMENT": {rules:["ASSIGN", "EXPR", "IF_DEF"]},
   //"BLOCK_STATEMENT": {rules:["FUNC_DEF"]},
   "VALUE": {rules:["number", "string"]},
-  "BLOCK_END": {rules:["STATEMENT dedent", "STATEMENT EOF"]},
+  "BLOCK_END": {rules:["STATEMENT dedent"]},
   "BLOCK_LINE": {rules:["STATEMENT samedent"]},
   "BLOCK": {rules: ["indent BLOCK_LINE* BLOCK_END"]},
   "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
@@ -153,7 +154,7 @@ var grammarDef = {
   "ASSIGN": {rules:["left:EXPR W? op:assign W? right:EXPR"], hooks:[function(p){return p;}]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS close_par"]},
-  "RETURN": {rules:["ret W EXPR", "ret W FUNC_DEF", "ret"]},
+  "RETURN": {rules:["ret W EXPR", "ret"]},
   "LEFTY": {rules: [
     "math_operators",
     "W binary_operators W EXPR",
@@ -165,6 +166,7 @@ var grammarDef = {
     "MATH",
     "EXPR LEFTY",
     "FUNC_CALL",
+    "FUNC_DEF",
     "RETURN",
     "number",
     "open_par EXPR close_par",
@@ -188,7 +190,7 @@ function assertComplete(input, g) {
   }
 }
 
-
+/*
 assertComplete("1 + 1 + 3 - 8 / 3 * 2", gram);
 assertComplete("hello = 1", gram);
 assertComplete("1 == 1", gram);
@@ -201,7 +203,7 @@ assertComplete('"hello workd" + 1', gram);
 
 assertComplete("def test()\n  1\n", gram);
 assertComplete('(1)', gram);
-assertComplete('(1 + 1)', gram);
+assertComplete('(1 + 1)', gram);*/
 
 var din = document.getElementById('in');
 var dout = document.getElementById('out');

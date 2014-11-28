@@ -290,12 +290,33 @@ grammar = {
 
 var gram6 = EPEG.compileGrammar(grammar, tokens);
 
-
 assertComplete("0", gram6);
 assertComplete("(0)", gram6);
 assertComplete("((0))", gram6);
 assertComplete("(((9)))", gram6);
 
+
+tokens = {
+  number: /^[0-9]/,
+  w: /^[ ]/,
+};
+
+grammar = {
+  "EXPR": {rules:["number w"]},
+  "START": {rules: ["EXPR* EOF"]}
+};
+
+var gram6 = EPEG.compileGrammar(grammar, tokens);
+
+
+assertComplete("1 1 1 1 ", gram6);
+assertComplete("1 ", gram6);
+assertComplete("", gram6);
+
+QUnit.test("Test * works on the START", function( assert ) {
+  var parsed = EPEG.parse("1 1 1 1 ", gram6);
+  assert.equal(parsed.children[0].children.length, 8);
+});
 
 
 

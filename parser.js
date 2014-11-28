@@ -215,7 +215,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     // no more tokens
     if(stoken === undefined) {
       if(rtoken.repeat !== false) {
-        currentNode.sp = sp - 1;
+        currentNode.sp = sp;
         currentNode.rp = rp;
         return currentNode;
       }
