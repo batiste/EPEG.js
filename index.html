@@ -27,12 +27,20 @@ EPEG.js demo
 <div style="clear:both">
 <div class="col">
   <h2>Input language</h2>
-<textarea id="in">1 + 1 * (2 + 1)
-hello[0].hello = 1
-def myFunc(b)
-  b = 3
+<textarea id="in">
+a = 1
+a = 2
 
-b = 10</textarea>
+def myFunc(a, b, c)
+  a = 3
+  return b
+
+if 1 == 1
+  1
+else
+  2
+
+</textarea>
 </div>
 <div class="col">
 <h2>AST</h2>
@@ -84,13 +92,15 @@ function dent(dentType) {
 var tokenDef = {
   function_def: /^def/,
   ret: /^return/,
-  name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
-  comparison: /^(<=|>=|<|>|===|!=|==)/,
-  assign: /^(\+=|-=|=)/,
-  number: /^-?[0-9]+\.?[0-9]*/,
   _if: /^if/,
   _else: /^else/,
   _elseif: /^elseif/,
+  name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
+  math_operators: /^(\+\+|\-\-)/,
+  binary_operators: /^(\&\&|\|\||\&|\||\<\<|\>\>)/,
+  comparison: /^(<=|>=|<|>|===|!=|==)/,
+  assign: /^(\+=|-=|=)/,
+  number: /^-?[0-9]+\.?[0-9]*/,
   comma: /^\,/,
   dot: /^\./,
   for_loop: /^for/,
@@ -111,12 +121,19 @@ function f_def(params) {
   return [params.fn, params.p, params.b];
 }
 
+function if_def(params) {
+  return params;
+}
+
 var grammarDef = {
   "START": {rules:["LINE"]},
-  "LINE": {rules:["STATEMENT samedent LINE", "STATEMENT EOF"]},
-  "STATEMENT": {rules:["ASSIGN", "FUNC_DEF", "EXPR"]},
+  "LINE": {rules:["STATEMENT? samedent LINE", "EOF", "STATEMENT EOF"]},
+  "STATEMENT": {rules:["ASSIGN", "FUNC_DEF", "EXPR", "IF_DEF"]},
+  //"BLOCK_STATEMENT": {rules:["FUNC_DEF"]},
   "VALUE": {rules:["number", "string"]},
-  "BLOCK": {rules: ["indent LINE* STATEMENT? dedent"]},
+  "BLOCK_END": {rules:["STATEMENT dedent", "STATEMENT EOF"]},
+  "BLOCK_LINE": {rules:["STATEMENT samedent"]},
+  "BLOCK": {rules: ["indent BLOCK_LINE* BLOCK_END"]},
   "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
   "FUNC_DEF": {rules:[
       "function_def open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?",
@@ -124,17 +141,24 @@ var grammarDef = {
     ],
     hooks: [f_def, f_def]
   },
+  "ELSE_DEF": {rules:["_else BLOCK"], hooks:[if_def]},
+  "IF_DEF": {rules:["_if W e:EXPR b:BLOCK el:ELSE_DEF?"], hooks:[if_def]},
   "MATH": {rules:["e1:EXPR W? op:math W? e2:EXPR"]},
   "PATH": {rules:["PATH dot name", "PATH open_bra number close_bra", "name"]},
   "ASSIGN": {rules:["left:EXPR W? op:assign W? right:EXPR"], hooks:[function(p){return p;}]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS close_par"]},
   "RETURN": {rules:["ret W EXPR", "ret W FUNC_DEF", "ret"]},
+  "LEFTY": {rules: [
+    "math_operators",
+    "W binary_operators W EXPR",
+    "W comparison W EXPR",
+    "dot EXPR",
+    "open_bra EXPR close_bra"
+  ]},
   "EXPR": {rules: [
     "MATH",
-    "EXPR W comparison W EXPR",
-    "EXPR dot EXPR",
-    "EXPR open_bra EXPR close_bra",
+    "EXPR LEFTY",
     "FUNC_CALL",
     "RETURN",
     "number",
@@ -187,16 +211,21 @@ din.onkeyup = function() {
 };
 
 function outit() {
+  namespaces = [{}];
   lastLevel = 0;
   var r = gram.parse(din.value);
+  //console.log(EPEG.tokenize(din.value, gram.tokenDef));
   lastLevel = 0;
   code.value = generateCode(r);
   dout.value = JSON.stringify(r, false, 2);
 }
 
+var namespaces = [{}];
+
 var backend = {
   'FUNC_DEF': function(node) {
     var name = "";
+    namespaces.push({});
     if(node.children[0]) {
       name = node.children[0].value;
     }
@@ -208,10 +237,28 @@ var backend = {
     if(node.children[2]) {
       str += generateCode(node.children[2]);
     }
+    namespaces.pop();
     return str + "}\n";
   },
   'ASSIGN': function(node) {
-    return 'var '+generateCode(node.children.left) + node.children.op.value + generateCode(node.children.right);
+    var prefix = "";
+    var ns = namespaces[namespaces.length -1];
+    if(node.children.left.children[0].type === 'name') {
+      var ch = node.children.left.children[0];
+      if(ns[ch.value] === undefined) {
+        prefix = 'var ';
+        ns[ch.value] = true;
+      }
+    }
+    return prefix+generateCode(node.children.left) + node.children.op.value + generateCode(node.children.right) + ';';
+  },
+  'IF_DEF': function(node) {
+    var str = '';
+    str = 'if('+generateCode(node.children.e) + '){' + generateCode(node.children.b) + '}';
+    if(node.children.el) {
+      str += ' else {'+generateCode(node.children.el.children.$1)+'}';
+    }
+    return str;
   }
 };
 

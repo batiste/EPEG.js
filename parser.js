@@ -101,17 +101,19 @@ function growLR(grammar, rule, stream, pos, memo) {
 
 function memoEval(grammar, rule, stream, pointer) {
 
-  var memo_entry = memoization[rule.key+';'+pointer];
   var key = rule.key+';'+pointer+';'+rule.index;
 
   // avoid infinite recursion
-  var already_in_stack = stack.filter(function(i){
-    return i[0] === key;
-  }).length;
-  if(already_in_stack > 0) {
+  // This is faster than filter
+  var i = stack.length - 1;
+  while(i >= 0) {
+    if(stack[i][0] == key) {
       return false;
+    }
+    i = i-1;
   }
 
+  var memo_entry = memoization[rule.key+';'+pointer];
   if(memo_entry !== undefined) {
     return memo_entry;
   }
