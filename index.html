@@ -132,8 +132,7 @@ function if_def(params) {
 }
 
 var grammarDef = {
-  "START": {rules:["L"]},
-  "L": {rules:["LINE* EOF"]},
+  "START": {rules:["LINE* EOF"]},
   "LINE": {rules:["STATEMENT samedent", "samedent"]},
   "STATEMENT": {rules:["ASSIGN", "EXPR", "IF_DEF"]},
   //"BLOCK_STATEMENT": {rules:["FUNC_DEF"]},
