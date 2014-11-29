@@ -162,10 +162,11 @@ function evalRuleBody(grammar, rule, stream, pointer) {
             //if(!memoization[r.key+';'+sp])
             memoization[r.key+';'+sp] = result;
 
-            var n_result = growLR(grammar, rule, stream, sp, result);
-
-            if(n_result !== false) {
-              return n_result;
+            if(rtoken.repeat === false) {
+              var n_result = growLR(grammar, rule, stream, sp, result);
+              if(n_result !== false) {
+                return n_result;
+              }
             }
             break;
           }

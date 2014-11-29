@@ -295,7 +295,6 @@ assertComplete("(0)", gram6);
 assertComplete("((0))", gram6);
 assertComplete("(((9)))", gram6);
 
-
 tokens = {
   number: /^[0-9]/,
   w: /^[ ]/,
@@ -314,8 +313,9 @@ assertComplete("1 ", gram6);
 assertComplete("", gram6);
 
 QUnit.test("Test * works on the START", function( assert ) {
-  var parsed = EPEG.parse("1 1 1 1 ", gram6);
-  assert.equal(parsed.children[0].children.length, 8);
+  var parsed = EPEG.parse("1 2 ", gram6);
+  assert.equal(parsed.children[0].children[0].value, 1);
+  assert.equal(parsed.children[1].children[0].value, 2);
 });
 
 
