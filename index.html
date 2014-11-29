@@ -38,7 +38,7 @@ def myFunc(p1, p2)
   a = 3
   b := 2
   b = 5
-  return b
+  return def(a) return a + 1
 
 if 1 == 1
   1
@@ -100,6 +100,7 @@ var tokenDef = {
   _if: /^if/,
   _else: /^else/,
   _elseif: /^elseif/,
+  r_arrow: /^\-\>/,
   name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
   math_operators: /^(\+\+|\-\-)/,
   binary_operators: /^(\&\&|\|\||\&|\||\<\<|\>\>)/,
@@ -142,10 +143,11 @@ var grammarDef = {
   "BLOCK": {rules: ["indent BLOCK_LINE* BLOCK_END"]},
   "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
   "FUNC_DEF": {rules:[
+      "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
       "function_def open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?",
-      "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?"
+      "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?",
     ],
-    hooks: [f_def, f_def]
+    hooks: [f_def, f_def, f_def]
   },
   "ELSE_DEF": {rules:["_else BLOCK"], hooks:[if_def]},
   "IF_DEF": {rules:["_if W e:EXPR b:BLOCK el:ELSE_DEF?"], hooks:[if_def]},
