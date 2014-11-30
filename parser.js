@@ -15,8 +15,9 @@ function tokenize(input, tokens) {
   var keys = Object.keys(tokens);
   var stream = [];
   var len = input.length, candidate, i, candidate_key;
+  var pointer = 0;
 
-  while(len > 0) {
+  while(pointer < len) {
     candidate = null;
     for(i=0; i<keys.length; i++) {
       var key = keys[i];
@@ -46,9 +47,9 @@ function tokenize(input, tokens) {
           stream.push({type:candidate_key, value:candidate});
         }
       }*/
-      stream.push({type:candidate_key, value:candidate});
+      stream.push({type:candidate_key, value:candidate, pointer:pointer});
+      pointer += candidate.length;
       input = input.substr(candidate.length);
-      len = input.length;
     } else {
       throw "No matching token found near " + input.substr(0, 12);
     }
@@ -130,6 +131,11 @@ function memoEval(grammar, rule, stream, pointer) {
   stack.push([key, rule]);
   var result = evalRuleBody(grammar, rule, stream, pointer);
   stack.pop();
+  if(result && best_p < pointer) {
+    // copyToken
+    best_parse = [stream, pointer, rule];
+    best_p = pointer;
+  }
   return result;
 
 }
@@ -298,12 +304,16 @@ function compileGrammar(grammar, tokenDef) {
 // those are module globals
 var stack = [];
 var memoization = {};
+var best_parse = [];
+var best_p = 0;
 
 function parse(stream, grammar) {
   var bestResult = {type:'START', sp:0, complete:false}, i, result;
   if(typeof stream === 'string') {
     stream = tokenize(stream, grammar.tokenDef);
   }
+  best_parse = [];
+  best_p = 0;
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];
     memoization = {};
@@ -314,10 +324,11 @@ function parse(stream, grammar) {
         children:result.children,
         sp: result.sp,
         complete:result.sp === stream.length,
-        inputLength:stream.length
+        inputLength:stream.length,
       };
     }
   }
+  bestResult.bestParse = best_parse; 
   return bestResult;
 }
 
