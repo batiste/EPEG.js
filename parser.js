@@ -22,7 +22,11 @@ function tokenize(input, tokens) {
       var key = keys[i];
       var token = tokens[key], match;
       if(typeof token === 'function') {
-        match = token(input) || null;
+        // Maybe support multiple tokens here?
+        match = token(input);
+        if(match === undefined) {
+          match = null;
+        }
         if(match !== null) {
           match = [match];
         }
@@ -37,6 +41,11 @@ function tokenize(input, tokens) {
       }
     }
     if(candidate && candidate.length > 0) {
+      /*if(candidate instanceof Array) {
+        for(var j=0; j<candidate.length; j++) {
+          stream.push({type:candidate_key, value:candidate});
+        }
+      }*/
       stream.push({type:candidate_key, value:candidate});
       input = input.substr(candidate.length);
       len = input.length;

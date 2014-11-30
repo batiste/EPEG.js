@@ -86,6 +86,9 @@ function dent(dentType) {
     var m = input.match(/^\n[ ]*/);
     if(m && indentType(m[0].length - 1) === dentType) {
       lastLevel = m[0].length - 1;
+      //if(dentType == 'dedent') {
+      //  return '';
+      //}
       return m[0];
     }
   };
@@ -133,13 +136,12 @@ function if_def(params) {
 
 var grammarDef = {
   "START": {rules:["LINE* EOF"]},
-  "LINE": {rules:["STATEMENT samedent", "samedent"]},
-  "STATEMENT": {rules:["ASSIGN", "EXPR", "IF_DEF"]},
-  //"BLOCK_STATEMENT": {rules:["FUNC_DEF"]},
+  "LINE": {rules:["STATEMENT samedent", "samedent", "BLOCK_STATEMENT"]},
+  "BLOCK_STATEMENT": {rules:["IF_DEF", "FUNC_DEF"]},
+  "STATEMENT": {rules:["ASSIGN", "EXPR"]},
   "VALUE": {rules:["number", "string"]},
-  "BLOCK_END": {rules:["STATEMENT dedent"]},
-  "BLOCK_LINE": {rules:["STATEMENT samedent"]},
-  "BLOCK": {rules: ["indent BLOCK_LINE* BLOCK_END"]},
+  "BLOCK_END": {rules:["STATEMENT dedent", "BLOCK_STATEMENT dedent"]},
+  "BLOCK": {rules: ["indent LINE* BLOCK_END"]},
   "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
   "FUNC_DEF": {rules:[
       "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
@@ -154,7 +156,7 @@ var grammarDef = {
   "PATH": {rules:["PATH dot name", "PATH open_bra number close_bra", "name"]},
   "ASSIGN": {rules:["left:EXPR W? op:assign W? right:EXPR"], hooks:[function(p){return p;}]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
-  "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS close_par"]},
+  "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS? close_par"]},
   "RETURN": {rules:["ret W EXPR", "ret"]},
   "LEFTY": {rules: [
     "math_operators",
@@ -222,7 +224,7 @@ function outit() {
   namespaces = [{}];
   lastLevel = 0;
   var r = gram.parse(din.value);
-  //console.log(EPEG.tokenize(din.value, gram.tokenDef));
+  console.log(EPEG.tokenize(din.value, gram.tokenDef));
   lastLevel = 0;
   code.value = generateCode(r);
   dout.value = JSON.stringify(r, false, 2);
