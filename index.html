@@ -96,7 +96,6 @@ function dent(dentType) {
   };
 }
 
-
 // token are matched in order of declaration
 // TODO: add functions
 var tokenDef = {
@@ -140,13 +139,13 @@ var grammarDef = {
   "START": {rules:["LINE* EOF"]},
   "LINE": {rules:["STATEMENT samedent", "samedent", "BLOCK_STATEMENT"]},
   "BLOCK_STATEMENT": {rules:["IF_DEF", "FUNC_DEF"]},
-  "STATEMENT": {rules:["ASSIGN", "EXPR"]},
+  "STATEMENT": {rules:["ASSIGN", "EXPR", "RETURN"]},
   "VALUE": {rules:["number", "string"]},
   "BLOCK_END": {rules:["STATEMENT dedent", "BLOCK_STATEMENT dedent"]},
   "BLOCK": {rules: ["indent LINE* BLOCK_END"]},
   "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
   "FUNC_DEF": {rules:[
-      "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
+      "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:RETURN",
       "function_def open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?",
       "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?",
     ],
@@ -172,7 +171,6 @@ var grammarDef = {
     "EXPR LEFTY",
     "FUNC_CALL",
     "FUNC_DEF",
-    "RETURN",
     "number",
     "open_par EXPR close_par",
     "string",
@@ -232,20 +230,27 @@ function spacer(n) {
 
 function errorAt(input, charn, rule, rulep) {
   var lines = input.split("\n"), i;
-  var counter = -1, c2 = 0;
+  var counter = 0, c2 = 0;
 
   for(i=0; i<lines.length; i++) {
     counter += lines[i].length + 1;
     if(counter >= charn) {
       break;
     }
-    c2 += 1 + lines[i].length;
+    c2 += lines[i].length + 1;
   }
   var l = Math.max(0, i);
   var msg = "Parser error at line "+(l+1)+" char "+ (charn - c2) +": ";
-  var indicator = "\n" + spacer(msg.length + (charn - c2));
-  msg = msg + lines[l] + indicator;
+  var indicator = "\n" + spacer((charn - c2) + ((l) + ': ').length);
+  if(lines[l-1]) {
+    msg = msg + "\n" + (l-1) + ': ' + lines[l-1];
+  }
+  msg = msg + "\n" + l + ': ' + lines[l] + indicator;
   msg = msg + "^-- Rule " + rule.key + " expect " + ((rulep && rulep.type) || "end of rule");
+
+  if(lines[l+1]) {
+    msg = msg + "\n" + (l+1) + ': ' + lines[l+1];
+  }
 
   throw msg;
 }
