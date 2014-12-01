@@ -131,11 +131,11 @@ function memoEval(grammar, rule, stream, pointer) {
   stack.push([key, rule]);
   var result = evalRuleBody(grammar, rule, stream, pointer);
   stack.pop();
-  if(result && best_p < pointer) {
+  /*if(result && best_p < pointer) {
     // copyToken
-    best_parse = [stream, pointer, rule];
+    best_parse = [pointer, rule];
     best_p = pointer;
-  }
+  }*/
   return result;
 
 }
@@ -216,6 +216,12 @@ function evalRuleBody(grammar, rule, stream, pointer) {
         rp++;
       }
 
+    }
+
+    if(best_p < sp) {
+      // copyToken
+      best_parse = [sp, rule, rule.tokens[rp]];
+      best_p = sp;
     }
 
     rtoken = rule.tokens[rp];
