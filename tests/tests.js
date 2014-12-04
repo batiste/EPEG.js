@@ -319,4 +319,13 @@ QUnit.test("Test * works on the START", function( assert ) {
 });
 
 
+grammar = {
+  "EXPR": {rules:["number w"]},
+  "START": {rules: ["EXPR+ EOF"]}
+};
+
+var gram7 = EPEG.compileGrammar(grammar, tokens);
+assertComplete("1 ", gram7);
+assertComplete("1 2 ", gram7);
+assertIncomplete("", gram7);
 

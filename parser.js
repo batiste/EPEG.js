@@ -14,40 +14,30 @@ function tokenize(input, tokens) {
   // this keep the order of declaration
   var keys = Object.keys(tokens);
   var stream = [];
-  var len = input.length, candidate, i, candidate_key;
+  var len = input.length, candidate, i, key;
   var pointer = 0;
 
   while(pointer < len) {
     candidate = null;
     for(i=0; i<keys.length; i++) {
-      var key = keys[i];
+      key = keys[i];
       var token = tokens[key], match;
       if(typeof token === 'function') {
-        // Maybe support multiple tokens here?
         match = token(input);
-        if(match === undefined) {
-          match = null;
-        }
-        if(match !== null) {
-          match = [match];
+        if(match !== undefined) {
+          candidate = match;
+          break;
         }
       } else {
         match = input.match(token);
-      }
-      if(match !== null) {
-        // the algo is not greedy
-        candidate = match[0];
-        candidate_key = key;
-        break;
+        if(match !== null) {
+          candidate = match[0];
+          break;
+        }
       }
     }
-    if(candidate && candidate.length > 0) {
-      /*if(candidate instanceof Array) {
-        for(var j=0; j<candidate.length; j++) {
-          stream.push({type:candidate_key, value:candidate});
-        }
-      }*/
-      stream.push({type:candidate_key, value:candidate, pointer:pointer});
+    if(candidate !== null) {
+      stream.push({type:key, value:candidate, pointer:pointer});
       pointer += candidate.length;
       input = input.substr(candidate.length);
     } else {
@@ -75,7 +65,7 @@ function createParams(tokens) {
   var j = 0;
   tokens.map(function(i) {
     if(i.name) {
-      if(i.repeat) {
+      if(i.repeat == '*') {
         if(!params[i.name]) {
           params[i.name] = [];
         }
@@ -131,13 +121,22 @@ function memoEval(grammar, rule, stream, pointer) {
   stack.push([key, rule]);
   var result = evalRuleBody(grammar, rule, stream, pointer);
   stack.pop();
-  /*if(result && best_p < pointer) {
-    // copyToken
-    best_parse = [pointer, rule];
-    best_p = pointer;
-  }*/
-  return result;
 
+  return result;
+}
+
+function canFail(token, node) {
+  if(token.repeat === '*' || token.repeat === '?') {
+    return true;
+  }
+  if(token.repeat === '+' && node.children.length && node.children[node.children.length - 1].type == token.type) {
+    return true;
+  }
+  return false;
+}
+
+function canRepeat(token) {
+  return token.repeat === '*' || token.repeat === '+';
 }
 
 function evalRuleBody(grammar, rule, stream, pointer) {
@@ -190,12 +189,18 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
       if(result) {
         sp = result.sp;
-        currentNode.children.push({type: rtoken.type, children:result.children, sp:result.sp, name:rtoken.name});
-        if(rtoken.repeat === false || rtoken.repeat === '?') {
+        currentNode.children.push({
+            type: rtoken.type,
+            children:result.children,
+            sp:result.sp,
+            name:rtoken.name,
+            repeat: rtoken.repeat
+          });
+        if(!canRepeat(rtoken)) {
           rp++;
         }
       } else {
-        if(rtoken.repeat === false) {
+        if(!canFail(rtoken, currentNode)) {
           return false;
         }
         rp++;
@@ -205,12 +210,12 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
       if(stoken.type === rtoken.type) {
         currentNode.children.push(copyToken(stoken, rtoken));
-        if(rtoken.repeat === false || rtoken.repeat === '?') {
+        if(!canRepeat(rtoken)) {
           rp++;
         }
         sp++;
       } else {
-        if(rtoken.repeat === false) {
+        if(!canFail(rtoken, currentNode)) {
           return false;
         }
         rp++;
@@ -277,7 +282,7 @@ function grammarToken(token) {
 function compileGrammar(grammar, tokenDef) {
   var keys = Object.keys(grammar), i, j;
   var allValidKeys = keys.concat(Object.keys(tokenDef));
-  var gram = {};
+  var gram = {}, optional;
 
   for(i=0; i<keys.length; i++) {
     var line = grammar[keys[i]];
@@ -288,13 +293,20 @@ function compileGrammar(grammar, tokenDef) {
 
     for(j=0; j<rules.length; j++) {
       var tokens = splitTrim(rules[j], ' ');
+      optional = 0;
       tokens = tokens.map(function(t) {
         var token = grammarToken(t);
         if(allValidKeys.indexOf(token.type) === -1 && token.type !== 'EOF') {
           throw "Invalid token type used in the grammar: " + token.type;
         }
+        if(token.repeat === '*') {
+          optional += 1;
+        }
         return token;
       });
+      if(optional === tokens.length) {
+        throw "Rule " + rules[j] + " only has * tokens.";
+      }
       splitted_rules.push({key: key, index:j, tokens:tokens});
     }
 
@@ -307,18 +319,59 @@ function compileGrammar(grammar, tokenDef) {
   return gram;
 }
 
+function spacer(n) {
+  var out = "";
+  for(var i=0; i<n; i++) {
+    out += " ";
+  }
+  return out;
+}
+
+function hint(input, stream, best_parse) {
+  var token = stream[best_parse[0]];
+  var charn = token.pointer;
+  var rule = best_parse[1];
+  var rulep = best_parse[2];
+  var lines = input.split("\n"), i;
+  var counter = 0, c2 = 0;
+
+  for(i=0; i<lines.length; i++) {
+    counter += lines[i].length + 1;
+    if(counter >= charn) {
+      break;
+    }
+    c2 += lines[i].length + 1;
+  }
+  var l = Math.max(0, i);
+  var msg = "Parser error at line "+(l+1)+" char "+ (charn - c2) +": ";
+  var indicator = "\n" + spacer((charn - c2) + ((l) + ': ').length);
+  if(lines[l-1]) {
+    msg = msg + "\n" + (l-1) + ': ' + lines[l-1];
+  }
+  msg = msg + "\n" + l + ': ' + lines[l] + indicator;
+  msg = msg + "^-- Rule " + rule.key + " expect " + ((rulep && rulep.type) || "end of rule");
+  var lastToken = stream[best_parse[0] + 1] || {type:"EOF"};
+  msg = msg + " got " + lastToken.type + " instead";
+
+  if(lines[l+1]) {
+    msg = msg + "\n" + (l+1) + ': ' + lines[l+1];
+  }
+
+  return msg;
+}
+
 // those are module globals
 var stack = [];
 var memoization = {};
-var best_parse = [];
+var best_parse = null;
 var best_p = 0;
 
-function parse(stream, grammar) {
-  var bestResult = {type:'START', sp:0, complete:false}, i, result;
-  if(typeof stream === 'string') {
-    stream = tokenize(stream, grammar.tokenDef);
-  }
-  best_parse = [];
+function parse(input, grammar) {
+  var bestResult = {type:'START', sp:0, complete:false}, i, result, stream;
+  //if(typeof input === 'string') {
+  stream = tokenize(input, grammar.tokenDef);
+  //}
+  best_parse = null;
   best_p = 0;
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];
@@ -334,7 +387,10 @@ function parse(stream, grammar) {
       };
     }
   }
-  bestResult.bestParse = best_parse; 
+  bestResult.bestParse = best_parse;
+  if(best_parse && !bestResult.complete) {
+    bestResult.hint = hint(input, stream, best_parse);
+  }
   return bestResult;
 }
 

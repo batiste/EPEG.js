@@ -17,6 +17,11 @@ div.col {
 h1, h2, h3 {
   margin: 0.4em 0;
 }
+#error {
+  padding: 0 1em;
+  background: #fee;
+  margin:1em;
+}
 </style>
 </head>
 <body>
@@ -26,28 +31,25 @@ EPEG.js demo
 
 <a href="https://github.com/batiste/EPEG.js">https://github.com/batiste/EPEG.js</a>
 
-<pre id="error"></pre>
-
 <div style="clear:both">
-<div class="col">
+<div class="col" style="position:relative">
   <h2>Input language</h2>
 <textarea id="in">
-a = 1
-a = 2
-b = 2
-
-def myFunc(p1, p2)
-  a = 3
-  b := 2
-  b = 5
-  return def(a) return a + 1
-
 if 1 == 1
-  1
+  a = 2
+elseif 1
+ 1
+elseif 2
+ 1
 else
-  2
+  b = 3
+
+
 
 </textarea>
+
+<pre id="error" style="position:absolute;bottom:0"></pre>
+
 </div>
 <div class="col">
 <h2>AST</h2>
@@ -71,13 +73,25 @@ else
 <script src='parser.js'></script>
 <script>
 
+function spacer(n) {
+  var out = "";
+  for(var i=0; i<n; i++) {
+    out += " ";
+  }
+  return out;
+}
 
-var lastLevel = 0;
+
+var levelStack = [0];
+function currentLevel() {
+  return levelStack[levelStack.length - 1];
+}
+
 function indentType(l) {
-  if(l > lastLevel) {
+  if(l > currentLevel()) {
     return 'indent';
   }
-  if(l < lastLevel) {
+  if(l < currentLevel()) {
     return 'dedent';
   }
   return 'samedent';
@@ -86,12 +100,18 @@ function indentType(l) {
 function dent(dentType) {
   return function _dent(input) {
     var m = input.match(/^\n[ ]*/);
-    if(m && indentType(m[0].length - 1) === dentType) {
-      lastLevel = m[0].length - 1;
-      //if(dentType == 'dedent') {
-      //  return '';
-      //}
-      return m[0];
+    if(m) {
+    var indent = m[0].length - 1;
+      if(indentType(indent) === dentType) {
+        if(dentType == 'dedent') {
+          levelStack.pop();
+          return spacer();
+        }
+        if(dentType == 'indent') {
+          levelStack.push(indent);
+        }
+        return m[0];
+      }
     }
   };
 }
@@ -102,8 +122,8 @@ var tokenDef = {
   function_def: /^def/,
   ret: /^return/,
   _if: /^if/,
-  _else: /^else/,
   _elseif: /^elseif/,
+  _else: /^else/,
   r_arrow: /^\-\>/,
   name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
   math_operators: /^(\+\+|\-\-)/,
@@ -122,7 +142,7 @@ var tokenDef = {
   samedent: dent('samedent'),
   dedent: dent('dedent'),
   indent: dent('indent'),
-  newline: /^(\r?\n|$)/,
+  //newline: /^(\r?\n|$)/,
   W: /^[ ]/,
   string: /^"([^"\\]*(\\.[^"\\]*)*)"/,
 };
@@ -131,18 +151,24 @@ function f_def(params) {
   return [params.fn, params.p, params.b];
 }
 
+function else_def(params) {
+  return [params.b];
+}
+
+function else_if_def(params) {
+  return [params.e, params.b];
+}
+
 function if_def(params) {
-  return params;
+  return [params.e, params.b, params.elif, params.el];
 }
 
 var grammarDef = {
   "START": {rules:["LINE* EOF"]},
-  "LINE": {rules:["STATEMENT samedent", "samedent", "BLOCK_STATEMENT"]},
-  "BLOCK_STATEMENT": {rules:["IF_DEF", "FUNC_DEF"]},
-  "STATEMENT": {rules:["ASSIGN", "EXPR", "RETURN"]},
+  "LINE": {rules:["STATEMENT samedent*", "samedent"]},
+  "STATEMENT": {rules:["ASSIGN", "EXPR", "RETURN", "IF"]},
   "VALUE": {rules:["number", "string"]},
-  "BLOCK_END": {rules:["STATEMENT dedent", "BLOCK_STATEMENT dedent"]},
-  "BLOCK": {rules: ["indent LINE* BLOCK_END"]},
+  "BLOCK": {rules: ["indent LINE+ dedent"]},
   "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
   "FUNC_DEF": {rules:[
       "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:RETURN",
@@ -151,15 +177,16 @@ var grammarDef = {
     ],
     hooks: [f_def, f_def, f_def]
   },
-  "ELSE_DEF": {rules:["_else BLOCK"], hooks:[if_def]},
-  "IF_DEF": {rules:["_if W e:EXPR b:BLOCK el:ELSE_DEF?"], hooks:[if_def]},
+  "ELSE_IF": {rules:["samedent _elseif W e:EXPR b:BLOCK"], hooks:[else_if_def]},
+  "ELSE": {rules:["samedent _else b:BLOCK"], hooks:[else_def]},
+  "IF": {rules:["_if W e:EXPR b:BLOCK elif:ELSE_IF* el:ELSE?"], hooks:[if_def]},
   "MATH": {rules:["e1:EXPR W? op:math W? e2:EXPR"]},
   "PATH": {rules:["PATH dot name", "PATH open_bra number close_bra", "name"]},
   "ASSIGN": {rules:["left:EXPR W? op:assign W? right:EXPR"], hooks:[function(p){return p;}]},
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS? close_par"]},
   "RETURN": {rules:["ret W EXPR", "ret"]},
-  "LEFTY": {rules: [
+  "RIGHT_EXPR": {rules: [
     "math_operators",
     "W binary_operators W EXPR",
     "W comparison W EXPR",
@@ -168,7 +195,7 @@ var grammarDef = {
   ]},
   "EXPR": {rules: [
     "MATH",
-    "EXPR LEFTY",
+    "EXPR RIGHT_EXPR",
     "FUNC_CALL",
     "FUNC_DEF",
     "number",
@@ -193,20 +220,6 @@ function assertComplete(input, g) {
   }
 }
 
-/*
-assertComplete("1 + 1 + 3 - 8 / 3 * 2", gram);
-assertComplete("hello = 1", gram);
-assertComplete("1 == 1", gram);
-assertComplete("hello != toto", gram);
-assertComplete("def test()", gram);
-assertComplete("def test(a, b)", gram);
-assertComplete("def(a, b)", gram);
-assertComplete("test(a + 1, 2 + b) - 2", gram);
-assertComplete('"hello workd" + 1', gram);
-
-assertComplete("def test()\n  1\n", gram);
-assertComplete('(1)', gram);
-assertComplete('(1 + 1)', gram);*/
 
 var din = document.getElementById('in');
 var dout = document.getElementById('out');
@@ -220,41 +233,6 @@ din.onkeyup = function() {
   outit();
 };
 
-function spacer(n) {
-  var out = "";
-  for(var i=0; i<n; i++) {
-    out += " ";
-  }
-  return out;
-}
-
-function errorAt(input, charn, rule, rulep) {
-  var lines = input.split("\n"), i;
-  var counter = 0, c2 = 0;
-
-  for(i=0; i<lines.length; i++) {
-    counter += lines[i].length + 1;
-    if(counter >= charn) {
-      break;
-    }
-    c2 += lines[i].length + 1;
-  }
-  var l = Math.max(0, i);
-  var msg = "Parser error at line "+(l+1)+" char "+ (charn - c2) +": ";
-  var indicator = "\n" + spacer((charn - c2) + ((l) + ': ').length);
-  if(lines[l-1]) {
-    msg = msg + "\n" + (l-1) + ': ' + lines[l-1];
-  }
-  msg = msg + "\n" + l + ': ' + lines[l] + indicator;
-  msg = msg + "^-- Rule " + rule.key + " expect " + ((rulep && rulep.type) || "end of rule");
-
-  if(lines[l+1]) {
-    msg = msg + "\n" + (l+1) + ': ' + lines[l+1];
-  }
-
-  throw msg;
-}
-
 function outit() {
   namespaces = [{}];
   lastLevel = 0;
@@ -263,9 +241,7 @@ function outit() {
     //console.log(EPEG.tokenize(din.value, gram.tokenDef));
     lastLevel = 0;
     if(!r.complete) {
-      var stream = EPEG.tokenize(din.value, gram.tokenDef);
-      var token = stream[r.bestParse[0]];
-      errorAt(din.value, token.pointer, r.bestParse[1], r.bestParse[2]);
+      throw r.hint;
     }
     code.value = generateCode(r);
     dout.value = JSON.stringify(r, false, 2);
@@ -293,7 +269,7 @@ var backend = {
       str += generateCode(node.children[2]);
     }
     namespaces.pop();
-    return str + "}\n";
+    return str + "\n}";
   },
   'ASSIGN': function(node) {
     var prefix = "";
@@ -310,20 +286,39 @@ var backend = {
         ns[ch.value] = true;
       }
     }
-    return prefix+generateCode(node.children.left) + op + generateCode(node.children.right) + ';';
+    return prefix+generateCode(node.children.left) + op + generateCode(node.children.right);
   },
-  'IF_DEF': function(node) {
+  'STATEMENT': function(node) {
+    return generateCode(node.children[0]) + ';';
+  },
+  'IF': function(node) {
     var str = '';
-    str = 'if('+generateCode(node.children.e) + '){' + generateCode(node.children.b) + '}';
-    if(node.children.el) {
-      str += ' else {'+generateCode(node.children.el.children.$1)+'}';
+    str = 'if('+generateCode(node.children[0]) + '){' + generateCode(node.children[1]) + '\n}';
+    if(node.children[2]) {
+      if(Array.isArray(node.children[2])) {
+        for (var i = 0; i < node.children[2].length; i++) {
+          str += generateCode(node.children[2][i]);
+        }
+      } else {
+        str += generateCode(node.children[2]);
+      }
+    }
+    if(node.children[3]) {
+      str += generateCode(node.children[3]);
     }
     return str;
-  }
+  },
+  'ELSE_IF': function(node) {
+    return 'else if('+generateCode(node.children[0])+') {'+generateCode(node.children[1])+'\n}';
+  },
+  'ELSE': function(node) {
+    return 'else {'+generateCode(node.children[0])+'\n}';
+  },
 };
 
 function generateCode(node) {
   if(!node) {
+    //debugger
   }
   if(node.value !== undefined) {
     return node.value;
