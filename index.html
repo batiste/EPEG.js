@@ -156,6 +156,10 @@ function f_def(params) {
   return [params.fn, params.p, params.b];
 }
 
+function lambda_def(params) {
+  return [params.fn, params.p, params.b];
+}
+
 function else_def(params) {
   return [params.b];
 }
@@ -175,12 +179,17 @@ var grammarDef = {
   "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE+ dedent"]},
   "FUNC_DEF_PARAMS": {rules:["FUNC_DEF_PARAMS comma W name", "name"]},
-  "FUNC_DEF": {rules:[
-      "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:RETURN",
-      "function_def open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?",
-      "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK?",
+  "LAMBDA": {rules:[
+      "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
+      "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
     ],
-    hooks: [f_def, f_def, f_def]
+    hooks: [lambda_def, lambda_def]
+  },
+  "FUNC_DEF": {rules:[
+      "function_def open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK",
+      "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK",
+    ],
+    hooks: [f_def, f_def]
   },
   "ELSE_IF": {rules:["samedent _elseif W e:EXPR b:BLOCK"], hooks:[else_if_def]},
   "ELSE": {rules:["samedent _else b:BLOCK"], hooks:[else_def]},
@@ -203,6 +212,7 @@ var grammarDef = {
     "EXPR RIGHT_EXPR",
     "FUNC_CALL",
     "FUNC_DEF",
+    "LAMBDA",
     "number",
     "open_par EXPR close_par",
     "string",
@@ -275,6 +285,23 @@ var backend = {
     }
     namespaces.pop();
     return str + "\n}";
+  },
+  'LAMBDA': function(node) {
+    var name = "";
+    namespaces.push({});
+    if(node.children[0]) {
+      name = node.children[0].value;
+    }
+    str = "function " + name + "(";
+    if(node.children[1]) {
+      str += generateCode(node.children[1]);
+    }
+    str += ') { return ';
+    if(node.children[2]) {
+      str += generateCode(node.children[2]);
+    }
+    namespaces.pop();
+    return str + "}";
   },
   'ASSIGN': function(node) {
     var prefix = "";
