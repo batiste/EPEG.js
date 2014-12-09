@@ -82,6 +82,7 @@ function createParams(tokens) {
 
 function growLR(grammar, rule, stream, pos, memo) {
   var sp, result, progress = false;
+  var hook = grammar[rule.key].hooks[rule.index];
   while(true) {
     sp = pos;
     result = evalRuleBody(grammar, rule, stream, sp);
@@ -89,6 +90,10 @@ function growLR(grammar, rule, stream, pos, memo) {
     // ensure some progress is made
     if(result === false || result.sp <= memo.sp) {
       return progress;
+    }
+
+    if(hook) {
+      result.children = hook(createParams(result.children));
     }
 
     memo.children = result.children;
@@ -142,7 +147,7 @@ function canRepeat(token) {
 function evalRuleBody(grammar, rule, stream, pointer) {
 
   var sp = pointer; // stream pointer
-  var rp = 0; // rule pointer
+  var rp = 0;       // rule pointer
   var j, result;
   var currentNode = {type: rule.key, children:[], start:pointer, name:rule.name};
 
@@ -310,7 +315,7 @@ function compileGrammar(grammar, tokenDef) {
       splitted_rules.push({key: key, index:j, tokens:tokens});
     }
 
-    gram[key] = {rules: splitted_rules, hooks: line.hooks};
+    gram[key] = {rules: splitted_rules, hooks: line.hooks || []};
   }
   gram.tokenDef = tokenDef;
   gram.parse = function(stream) {
