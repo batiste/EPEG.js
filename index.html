@@ -39,7 +39,25 @@ EPEG.js demo
 <div style="clear:both">
 <div class="col" style="position:relative">
   <h2>Input language</h2>
-<textarea id="in">def test(a, b, c) 1
+<textarea id="in">
+
+d = 10
+e = 11
+
+def test(a, b)
+  a = 1
+  h = 1
+  d = 10
+  e := 11
+  return def test2(toto)
+    a = 2
+    d := 10
+    toto = 2
+    return def(f) a + 10
+
+
+
+
 </textarea>
 
 <pre id="error" style=""></pre>
@@ -161,28 +179,21 @@ function if_def(params) {
   return [params.e, params.b, params.elif, params.el];
 }
 
-function unfoldLeafs(node, accu) {
+function flattenLeftRecursion(node, accu) {
   if(node.children === undefined) {
     accu.push(node);
   } else {
     for(var i=0; i<node.children.length; i++) {
-      unfoldLeafs(node.children[i], accu);
+      flattenLeftRecursion(node.children[i], accu);
     }
   }
 }
 
-function unroll1(params) {
+function unrollParams(params) {
   var p = [];
-  if(params.p1) {
-    unfoldLeafs(params.p1, p);
-  }
+  flattenLeftRecursion(params.p1, p);
   p.push(params.p2);
-  debugger
   return p;
-}
-
-function unroll2(params) {
-  return [params.p1];
 }
 
 var grammarDef = {
@@ -191,7 +202,7 @@ var grammarDef = {
   "STATEMENT": {rules:["ASSIGN", "EXPR", "RETURN", "IF"]},
   "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE+ dedent"]},
-  "FUNC_DEF_PARAMS": {rules:["p1:FUNC_DEF_PARAMS comma W p2:name", "p1:name"], hooks: [unroll1, unroll2]},
+  "FUNC_DEF_PARAMS": {rules:["p1:FUNC_DEF_PARAMS comma W p2:name", "p1:name"], hooks: [unrollParams, false]},
   "LAMBDA": {rules:[
       "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
       "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
@@ -264,7 +275,7 @@ din.onkeyup = function() {
 function outit() {
   namespaces = [{}];
   lastLevel = 0;
-  //try {
+  try {
     var r = gram.parse(din.value);
     //console.log(EPEG.tokenize(din.value, gram.tokenDef));
     lastLevel = 0;
@@ -274,22 +285,25 @@ function outit() {
     code.value = generateCode(r);
     dout.value = JSON.stringify(r, false, 2);
     document.getElementById("error").textContent = "";
-  //} catch(e) {
-    //throw e;
-    //document.getElementById("error").textContent = String(e);
-  //}
+  } catch(e) {
+    document.getElementById("error").textContent = String(e);
+    throw e;
+  }
 }
 
 var namespaces = [{}];
 
-function generateParams(node, ns) {
+function generateParams(ps, ns) {
   var str = '';
-  if(node.children[1]) {
-    var params = node.children[1].children;
+  if(ps){
+    var params = ps.children;
     if(params) {
       params.map(function(p){
         ns[p.value] = true;
-        str += p.value + ', ';
+        str += p.value;
+        if(params[params.length - 1] !== p) {
+          str += ', ';
+        }
       });
     }
   }
@@ -305,7 +319,7 @@ var backend = {
       name = node.children[0].value;
     }
     str = "function " + name + "(";
-    str += generateParams(node, ns);
+    str += generateParams(node.children[1], ns);
     str += ') {';
     if(node.children[2]) {
       str += generateCode(node.children[2]);
@@ -321,14 +335,13 @@ var backend = {
       name = node.children[0].value;
     }
     str = "function " + name + "(";
-    debugger
-    str += generateParams(node, ns);
+    str += generateParams(node.children[1], ns);
     str += ') { return ';
     if(node.children[2]) {
       str += generateCode(node.children[2]);
     }
     namespaces.pop();
-    return str + "}";
+    return str + "; }";
   },
   'ASSIGN': function(node) {
     var prefix = "";

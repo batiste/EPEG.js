@@ -318,9 +318,12 @@ QUnit.test("Test * works on the START", function( assert ) {
   assert.equal(parsed.children[1].children[0].value, 2);
 });
 
+var hook1 = function(p) {
+  return [p.n];
+};
 
 grammar = {
-  "EXPR": {rules:["number w"]},
+  "EXPR": {rules:["n:number w"], hooks:[hook1]},
   "START": {rules: ["EXPR+ EOF"]}
 };
 
@@ -328,4 +331,54 @@ var gram7 = EPEG.compileGrammar(grammar, tokens);
 assertComplete("1 ", gram7);
 assertComplete("1 2 ", gram7);
 assertIncomplete("", gram7);
+
+
+QUnit.test("Test hooks", function( assert ) {
+  var parsed = EPEG.parse("1 2 3 ", gram7);
+  assert.equal(parsed.children[0].children.length, 1);
+  assert.equal(parsed.children[0].children[0].value, 1);
+  assert.equal(parsed.children[1].children.length, 1);
+  assert.equal(parsed.children[1].children[0].value, 2);
+  assert.equal(parsed.children[2].children.length, 1);
+  assert.equal(parsed.children[2].children[0].value, 3);
+});
+
+
+var hook2 = function(p) {
+  return [p.e, p.n];
+};
+
+var hook3 = function(p) {
+  return [p.n];
+};
+
+
+grammar = {
+  "EXPR2": {rules:["e:EXPR2 w n:number", "n:number"], hooks:[hook2, hook3]},
+  "START": {rules: ["EXPR2 EOF"]}
+};
+
+var gram8 = EPEG.compileGrammar(grammar, tokens);
+assertComplete("1", gram8);
+assertComplete("1 2", gram8);
+assertComplete("1 2 3", gram8);
+assertIncomplete("", gram8);
+
+QUnit.test("Test hooks 2", function( assert ) {
+  var parsed = EPEG.parse("1 2 3", gram8);
+  assert.equal(parsed.children[0].children.length, 2);
+  assert.equal(parsed.children[0].children[1].value, 3);
+  assert.equal(parsed.children[0].children[0].children[1].value, 2);
+  assert.equal(parsed.children[0].children[0].children[0].children[0].value, 1);
+});
+
+
+grammar = {
+  "START": {rules: ["w EOF+"]}
+};
+
+var gram9 = EPEG.compileGrammar(grammar, tokens);
+assertComplete(" ", gram9);
+assertIncomplete("  ", gram9);
+assertIncomplete("", gram9);
 

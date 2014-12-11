@@ -92,14 +92,19 @@ function growLR(grammar, rule, stream, pos, memo) {
       return progress;
     }
 
-    if(hook) {
+    // apply rule hooks
+    if(hook && !result.hooked) {
       result.children = hook(createParams(result.children));
+      result.hooked = true;
     }
 
+    // it's very important to update the memoized value
+    // this is actually growing the seed in the memoization
     memo.children = result.children;
     memo.sp = result.sp;
     memo.start = result.start;
-    progress = memo;
+    memo.hooked = result.hooked;
+    progress = result;
   }
   return progress;
 }
@@ -156,6 +161,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
   while(rtoken && stoken) {
 
+    // Case one: we have a rule we need to develop
     if(grammar[rtoken.type]) {
 
       var expand_rules = grammar[rtoken.type].rules;
@@ -170,15 +176,17 @@ function evalRuleBody(grammar, rule, stream, pointer) {
       if(!result) {
         for(j=0; j<expand_rules.length; j++) {
           var r = expand_rules[j];
+          var hook = hooks && hooks[j];
 
           result = memoEval(grammar, r, stream, sp);
 
           if(result) {
-            if(hooks && hooks[j]) {
-              result.children = hooks[j](createParams(result.children));
+
+            if(hook && !result.hooked) {
+              result.children = hook(createParams(result.children));
+              result.hooked = true;
             }
 
-            //if(!memoization[r.key+';'+sp])
             memoization[r.key+';'+sp] = result;
 
             if(rtoken.repeat === false) {
@@ -211,6 +219,7 @@ function evalRuleBody(grammar, rule, stream, pointer) {
         rp++;
       }
 
+    // Case two: we have a proper token
     } else {
 
       if(stoken.type === rtoken.type) {
@@ -228,12 +237,13 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
     }
 
+    // information used for debugging purpose
     if(best_p < sp) {
-      // copyToken
       best_parse = [sp, rule, rule.tokens[rp]];
       best_p = sp;
     }
 
+    // fetch next rule and stream token
     rtoken = rule.tokens[rp];
     stoken = stream[sp];
 
@@ -246,7 +256,9 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
     // no more tokens
     if(stoken === undefined) {
-      if(rtoken.repeat !== false) {
+      if(canFail(rtoken, currentNode)) {
+        // This does not happen often because of EOF,
+        // As it stands the last token as always to be EOF
         currentNode.sp = sp;
         currentNode.rp = rp;
         return currentNode;
