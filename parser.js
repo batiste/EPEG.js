@@ -349,7 +349,7 @@ function spacer(n) {
 
 function hint(input, stream, best_parse) {
   var token = stream[best_parse.sp];
-  var charn = token.pointer;
+  var charn = token.pointer || 0;
   var rule = best_parse.candidates[0][0];
   var rulep = best_parse.candidates[0][1];
   var lines = input.split("\n"), i;
@@ -402,7 +402,7 @@ function parse(input, grammar) {
   //if(typeof input === 'string') {
   stream = tokenize(input, grammar.tokenDef);
   //}
-  best_parse = null;
+  best_parse = {sp:0, candidates:[]};
   best_p = 0;
   for(i=0; i<grammar.START.rules.length; i++) {
     stack = [];

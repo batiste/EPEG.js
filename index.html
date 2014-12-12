@@ -40,6 +40,8 @@ EPEG.js demo
 <div class="col" style="position:relative">
   <h2>Input language</h2>
 <textarea id="in">
+g = "multiline
+string"
 
 d = [1, 2, 2 + 1]
 e = {a: 1, toto: [1, 2]}
@@ -173,8 +175,23 @@ var tokenDef = {
   indent: dent('indent'),
   //newline: /^(\r?\n|$)/,
   W: /^[ ]/,
-  string: /^"([^"\\]*(\\.[^"\\]*)*)"/,
+  string: stringDef,
 };
+
+function stringDef(input) {
+  if(input.charAt(0) === '"') {
+    var i = 1;
+    while(input.charAt(i)) {
+      var ch = input.charAt(i);
+      if(ch === '\\') {
+        i++;
+      } else if(ch === '"') {
+        return input.slice(0, i+1);
+      }
+      i++;
+    }
+  }
+}
 
 function f_def(params) {
   return [params.fn, params.p, params.b];
@@ -447,19 +464,22 @@ var backend = {
   'ELSE': function(node) {
     return 'else {'+generateCode(node.children[0])+'\n'+sp()+'}';
   },
+  'string': function(node) {
+    return node.value.replace(/\n/g, "\\\n");
+  },
 };
 
 function generateCode(node) {
   if(!node) {
     //debugger
   }
+  if(backend[node.type]) {
+    return backend[node.type](node);
+  }
   if(node.value !== undefined) {
     return node.value;
   }
   var str = "", i;
-  if(backend[node.type]) {
-    return backend[node.type](node);
-  }
   if(!node.children) {
     return '';
   }
