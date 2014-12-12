@@ -238,8 +238,11 @@ function evalRuleBody(grammar, rule, stream, pointer) {
     }
 
     // information used for debugging purpose
+    if(best_p === sp) {
+      best_parse.candidates.push([rule, rule.tokens[rp]]);
+    }
     if(best_p < sp) {
-      best_parse = [sp, rule, rule.tokens[rp]];
+      best_parse = {sp:sp, candidates:[[rule, rule.tokens[rp]]]};
       best_p = sp;
     }
 
@@ -345,10 +348,10 @@ function spacer(n) {
 }
 
 function hint(input, stream, best_parse) {
-  var token = stream[best_parse[0]];
+  var token = stream[best_parse.sp];
   var charn = token.pointer;
-  var rule = best_parse[1];
-  var rulep = best_parse[2];
+  var rule = best_parse.candidates[0][0];
+  var rulep = best_parse.candidates[0][1];
   var lines = input.split("\n"), i;
   var counter = 0, c2 = 0;
 
@@ -359,20 +362,31 @@ function hint(input, stream, best_parse) {
     }
     c2 += lines[i].length + 1;
   }
+
+  var array = [];
+  best_parse.candidates.map(function(r) {
+    if(r[1] && array.indexOf(r[1].type) === -1) {
+      array.push(r[1].type);
+    }
+  });
+  var candidates = array.join(' or ');
+
   var l = Math.max(0, i);
   var msg = "Parser error at line "+(l+1)+" char "+ (charn - c2) +": ";
   var indicator = "\n" + spacer((charn - c2) + ((l) + ': ').length);
-  if(lines[l-1]) {
-    msg = msg + "\n" + (l-1) + ': ' + lines[l-1];
+  if(lines[l-1] !== undefined) {
+    msg = msg + "\n" + (l) + ': ' + lines[l-1];
   }
-  msg = msg + "\n" + l + ': ' + lines[l] + indicator;
-  msg = msg + "^-- Rule " + rule.key + " expect " + ((rulep && rulep.type) || "end of rule");
-  var lastToken = stream[best_parse[0] + 1] || {type:"EOF"};
-  msg = msg + " got " + lastToken.type + " instead";
+  msg = msg + "\n" + (l+1) + ': ' + lines[l] + indicator;
+  msg = msg + "^-- Rule " + rule.key;
 
-  if(lines[l+1]) {
-    msg = msg + "\n" + (l+1) + ': ' + lines[l+1];
+  if(lines[l+1] !== undefined) {
+    msg = msg + "\n" + (l+2) + ': ' + lines[l+1];
   }
+
+  msg = msg + "\nExpect " + candidates
+  var lastToken = stream[best_parse.sp] || {type:"EOF"};
+  msg = msg + "\nBut got " + lastToken.type + " instead";
 
   return msg;
 }
