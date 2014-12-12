@@ -27,6 +27,9 @@ h1, h2, h3 {
   right:1;
   margin:0;
 }
+button {
+  font-size:1.2em
+}
 </style>
 </head>
 <body>
@@ -43,27 +46,23 @@ EPEG.js demo
 g = "multiline
 string"
 
-d = [1, 2, 2 + 1]
+array = [1, 2, 2 + 1]
 e = {a: 1, toto: [1, 2]}
-array.map(def(i) i * 2)
 
 def test(a, b)
   a = 1
   h = 1
   d = 10
   e := 11
-  return def test2(toto)
-    a = 2
-    d := 10
-    toto = 2
-    return def(f) a + 10
+  return def(f) a + 10
 
 for key, value in array
   if value == 1
     break
   else
-    print(value, key)
+    console.log(key, value)
 
+array.map(def(i) i * 2)
 
 </textarea>
 
@@ -78,6 +77,8 @@ for key, value in array
 <div class="col">
 <h2>Output language</h2>
 <textarea id="code"></textarea>
+<button id="evalButton">Eval</button>
+<pre id="evalResult"></pre>
 </div>
 </div>
 
@@ -326,13 +327,19 @@ function assertComplete(input, g) {
 }
 
 
-var din = document.getElementById('in');
-var dout = document.getElementById('out');
-var code = document.getElementById('code');
-var gOut = document.getElementById('grammarOut');
+function dGet(id){ return document.getElementById(id); }
+var din = dGet('in');
+var dout = dGet('out');
+var code = dGet('code');
+var gOut = dGet('grammarOut');
 gOut.textContent = JSON.stringify(grammarDef, false, 2);
-var tOut = document.getElementById('tokenOut');
+var tOut = dGet('tokenOut');
 tOut.textContent = JSON.stringify(tokenDef, false, 2);
+
+dGet('evalButton').onclick = function() {
+  var result = eval(code.value);
+  dGet('evalResult').textContent = result;
+};
 
 din.onkeyup = function() {
   outit();
