@@ -258,7 +258,7 @@ forLoopCount = 1;
 
 var grammarDef = {
   "START": {rules:["LINE* EOF"]},
-  "LINE": {rules:["STATEMENT samedent*", "samedent"]},
+  "LINE": {rules:["STATEMENT samedent*", "comment? samedent"]},
   "STATEMENT": {rules:["ASSIGN", "IF", "FOR", "EXPR", "RETURN"]},
   "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE+ dedent"]},
