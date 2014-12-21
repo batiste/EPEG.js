@@ -46,6 +46,11 @@ EPEG.js demo
 g = "multiline
 string"
 
+def fib(n)
+    if n < 2
+        return n
+    return fib(n-2) + fib(n-1)
+
 array = [1, 2, 2 + 1]
 e = {a: 1, toto: [1, 2]}
 
@@ -62,7 +67,7 @@ for key, value in array
   else
     console.log(key, value)
 
-array.map(def(i) i * 2)
+array.map(def(i) fib(i * 3))
 
 </textarea>
 
@@ -160,7 +165,7 @@ var tokenDef = {
   binary_operators: /^(\&\&|\|\||\&|\||\<\<|\>\>)/,
   comparison: /^(<=|>=|<|>|===|!=|==)/,
   assign: /^(\+=|-=|=|:=)/,
-  number: /^-?[0-9]+\.?[0-9]*/,
+  number: /^[0-9]+\.?[0-9]*/, // only positive for now
   comma: /^\,/,
   dot: /^\./,
   colon: /^\:/,
@@ -291,8 +296,8 @@ var grammarDef = {
   "RETURN": {rules:["ret W EXPR", "ret"]},
   "RIGHT_EXPR": {rules: [
     "math_operators",
-    "W binary_operators W EXPR",
-    "W comparison W EXPR",
+    "W? binary_operators W? EXPR",
+    "W? comparison W? EXPR",
     "dot EXPR",
     "open_bra EXPR close_bra"
   ]},
