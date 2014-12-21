@@ -15,6 +15,9 @@ Demo http://batiste.info/EPEG.js/
 
 Tests http://batiste.info/EPEG.js/tests/tests.html
 
+EPEG.js is able to provide quite accurate grammar parsing error messages that are
+directly formatted.
+
 Example of a valid grammar
 
 ```javascript
@@ -77,7 +80,8 @@ tokens = {
 
 ### Modifiers
 
-Every item in a rule/token in the grammar can use the modifiers * and ?. E.g using the tokensDef above:
+Every item in a rule/token in the grammar can use the modifiers *, + and ?. They behave
+similarly as in regular expressions. E.g using the tokensDef above:
 
 ```javascript
 var grammarDef = {
