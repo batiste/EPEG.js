@@ -385,6 +385,9 @@ function errorMsg(input, stream, sp, errorType, m) {
 }
 
 function hint(input, stream, best_parse) {
+  if(!best_parse || !best_parse.candidates[0]) {
+    return "Complete failure to parse";
+  }
   var rule = best_parse.candidates[0][0];
 
   var array = [];

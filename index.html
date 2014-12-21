@@ -7,7 +7,7 @@ body, html {
 }
 textarea {
   width:100%;
-  height:400px;
+  height:600px;
   font-size:14px;
 }
 div.col {
@@ -34,10 +34,10 @@ button {
 </head>
 <body>
 <h1>
-EPEG.js demo
+EPEG.js demo, implementation of a Python-like language
 </h1>
 
-<a href="https://github.com/batiste/EPEG.js">https://github.com/batiste/EPEG.js</a>
+<p>More info on the github page <a href="https://github.com/batiste/EPEG.js">https://github.com/batiste/EPEG.js</a></p>
 
 <div style="clear:both">
 <div class="col" style="position:relative">
@@ -52,13 +52,14 @@ def fib(n)
     return fib(n-2) + fib(n-1)
 
 array = [1, 2, 2 + 1]
-e = {a: 1, toto: [1, 2]}
+object = {a: 1, toto: [1, 2]}
 
 def test(a, b)
   a = 1
   h = 1
   d = 10
-  e := 11
+  // this is a outer scope affectation
+  object := {}
   return def(f) a + 10
 
 for key, value in array
@@ -152,6 +153,7 @@ function dent(dentType) {
 // token are matched in order of declaration
 // TODO: add functions
 var tokenDef = {
+  comment: commentDef,
   function_def: /^def/,
   ret: /^return/,
   _if: /^if/,
@@ -162,7 +164,7 @@ var tokenDef = {
   _in: /^in/,
   name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
   math_operators: /^(\+\+|\-\-)/,
-  binary_operators: /^(\&\&|\|\||\&|\||\<\<|\>\>)/,
+  binary_operators: /^(\&\&|\|\||\&|\||<<|\>\>)/,
   comparison: /^(<=|>=|<|>|===|!=|==)/,
   assign: /^(\+=|-=|=|:=)/,
   number: /^[0-9]+\.?[0-9]*/, // only positive for now
@@ -193,6 +195,19 @@ function stringDef(input) {
         i++;
       } else if(ch === '"') {
         return input.slice(0, i+1);
+      }
+      i++;
+    }
+  }
+}
+
+function commentDef(input) {
+  if(input.indexOf("//") === 0) {
+    var i = 2;
+    while(input.charAt(i)) {
+      var ch = input.charAt(i);
+      if(ch === '\n') {
+        return input.slice(0, i);
       }
       i++;
     }
