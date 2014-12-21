@@ -14,7 +14,7 @@ function tokenize(input, tokens) {
   // this keep the order of declaration
   var keys = Object.keys(tokens);
   var stream = [];
-  var len = input.length, candidate, i, key;
+  var len = input.length, candidate, i, key, copy = input, lastToken = null;
   var pointer = 0;
 
   while(pointer < len) {
@@ -37,11 +37,17 @@ function tokenize(input, tokens) {
       }
     }
     if(candidate !== null) {
-      stream.push({type:key, value:candidate, pointer:pointer});
+      lastToken = {type:key, value:candidate, pointer:pointer};
+      stream.push(lastToken);
       pointer += candidate.length;
       input = input.substr(candidate.length);
     } else {
-      throw "No matching token found near " + input.substr(0, 12);
+      if(lastToken)
+        lastToken.pointer += lastToken.value.length;
+      var msg = errorMsg(copy, stream, stream.length - 1, "Tokenizer error", "No matching token found");
+      if(lastToken)
+        msg += "\n" + "Before token of type " + lastToken.type + ": " + lastToken.value;
+      throw msg;
     }
   }
   stream.push({type:'EOF', value:""});
@@ -347,21 +353,39 @@ function spacer(n) {
   return out;
 }
 
-function hint(input, stream, best_parse) {
-  var token = stream[best_parse.sp];
+function errorMsg(input, stream, sp, errorType, m) {
+
+  var token = stream[sp];
   var charn = token.pointer || 0;
-  var rule = best_parse.candidates[0][0];
-  var rulep = best_parse.candidates[0][1];
-  var lines = input.split("\n"), i;
-  var counter = 0, c2 = 0;
+  var lines = input.split("\n"), i, charCounter = 0, charOnLine = 0;
 
   for(i=0; i<lines.length; i++) {
-    counter += lines[i].length + 1;
-    if(counter >= charn) {
+    charCounter += lines[i].length + 1;
+    if(charCounter >= charn) {
       break;
     }
-    c2 += lines[i].length + 1;
+    charOnLine += lines[i].length + 1;
   }
+
+  var ln = Math.max(0, i); // line number
+  var msg = errorType + " at line "+(ln+1)+" char "+ (charn - charOnLine) +": ";
+  var indicator = "\n" + spacer((charn - charOnLine) + ((ln) + ': ').length);
+
+  if(lines[ln-1] !== undefined) {
+    msg = msg + "\n" + (ln) + ': ' + lines[ln-1];
+  }
+  msg = msg + "\n" + (ln+1) + ': ' + lines[ln] + indicator;
+  msg = msg + "^-- " + m;
+
+  if(lines[ln+1] !== undefined) {
+    msg = msg + "\n" + (ln+2) + ': ' + lines[ln+1];
+  }
+
+  return msg;
+}
+
+function hint(input, stream, best_parse) {
+  var rule = best_parse.candidates[0][0];
 
   var array = [];
   best_parse.candidates.map(function(r) {
@@ -371,20 +395,8 @@ function hint(input, stream, best_parse) {
   });
   var candidates = array.join(' or ');
 
-  var l = Math.max(0, i);
-  var msg = "Parser error at line "+(l+1)+" char "+ (charn - c2) +": ";
-  var indicator = "\n" + spacer((charn - c2) + ((l) + ': ').length);
-  if(lines[l-1] !== undefined) {
-    msg = msg + "\n" + (l) + ': ' + lines[l-1];
-  }
-  msg = msg + "\n" + (l+1) + ': ' + lines[l] + indicator;
-  msg = msg + "^-- Rule " + rule.key;
-
-  if(lines[l+1] !== undefined) {
-    msg = msg + "\n" + (l+2) + ': ' + lines[l+1];
-  }
-
-  msg = msg + "\nExpect " + candidates
+  var msg = errorMsg(input, stream, best_parse.sp, "Parser error", "Rule " + rule.key);
+  msg = msg + "\nExpect " + candidates;
   var lastToken = stream[best_parse.sp] || {type:"EOF"};
   msg = msg + "\nBut got " + lastToken.type + " instead";
 
