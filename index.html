@@ -43,6 +43,7 @@ EPEG.js demo, implementation of a Python-like language
 <div class="col" style="position:relative">
   <h2>Input language</h2>
 <textarea id="in">
+
 g = "multiline
 string"
 
@@ -54,7 +55,7 @@ def fib(n)
 array = [1, 2, 2 + 1]
 object = {a: 1, toto: [1, 2]}
 
-def test(a, b)
+def test(a, b=10)
   a = 1
   h = 1
   d = 10
@@ -234,20 +235,21 @@ function if_def(params) {
   return [params.e, params.b, params.elif, params.el];
 }
 
-function flattenLeftRecursion(node, accu) {
+function flatten(node, accu) {
   if(node.children === undefined) {
     accu.push(node);
   } else {
     for(var i=0; i<node.children.length; i++) {
-      flattenLeftRecursion(node.children[i], accu);
+      debugger
+      flatten(node.children[i], accu);
     }
   }
 }
 
 function unrollParams(params) {
   var p = [];
-  flattenLeftRecursion(params.p1, p);
-  p.push(params.p2);
+  flatten(params.p1, p);
+  flatten(params.p2, p);
   return p;
 }
 
@@ -262,7 +264,13 @@ var grammarDef = {
   "STATEMENT": {rules:["ASSIGN", "IF", "FOR", "EXPR", "RETURN"]},
   "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE+ dedent"]},
-  "FUNC_DEF_PARAMS": {rules:["p1:FUNC_DEF_PARAMS comma W p2:name", "p1:name"], hooks: [unrollParams, false]},
+  "FUNC_DEF_PARAMS": {rules:[
+      "p1:FUNC_DEF_PARAMS comma W p2:FUNC_DEF_PARAMS",
+      "p1:name assign e:EXPR",
+      "p1:name",
+    ],
+    //hooks: [unrollParams, false, false]
+  },
   "LAMBDA": {rules:[
       "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
       "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
@@ -335,18 +343,6 @@ window.onload = function() {
 
 var gram = EPEG.compileGrammar(grammarDef, tokenDef);
 
-function assertComplete(input, g) {
-  lastLevel = 0;
-  var r = g.parse(input);
-  if(!r.complete) {
-    lastLevel = 0;
-    var ts = EPEG.tokenize(input, g.tokenDef);
-    lastLevel = 0;
-    console.log("Incomplete parsing on: " + input + ", leftover ", r, ts, ts.slice(r.consumed).map(function(i){return i.value;}));
-  }
-}
-
-
 function dGet(id){ return document.getElementById(id); }
 var din = dGet('in');
 var dout = dGet('out');
@@ -392,11 +388,14 @@ function generateParams(ps, ns) {
   if(ps){
     var params = ps.children;
     if(params) {
-      params.map(function(p){
-        ns[p.value] = true;
-        str += p.value;
-        if(params[params.length - 1] !== p) {
-          str += ', ';
+      params.map(function(p) {
+        if(p.type == 'name') {
+          ns[p.value] = true;
+        }
+        if(p.children) {
+          str += generateParams(p, ns);
+        } else {
+          str += p.value;
         }
       });
     }

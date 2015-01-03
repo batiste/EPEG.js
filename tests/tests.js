@@ -382,3 +382,14 @@ assertComplete(" ", gram9);
 assertIncomplete("  ", gram9);
 assertIncomplete("", gram9);
 
+
+
+grammar = {
+  "START": {rules: ["A"]},
+  "A": {rules:[
+      "p1:FUNC_DEF_PARAMS comma W p2:name assign e:EXPR",
+      "p1:FUNC_DEF_PARAMS comma W p2:name"
+  ]},
+  hooks: [false, false]
+};
+

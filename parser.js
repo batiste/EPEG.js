@@ -103,6 +103,7 @@ function growLR(grammar, rule, stream, pos, memo) {
       result.children = hook(createParams(result.children));
       result.hooked = true;
     }
+    result.hooked = true;
 
     // it's very important to update the memoized value
     // this is actually growing the seed in the memoization
@@ -190,8 +191,8 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
             if(hook && !result.hooked) {
               result.children = hook(createParams(result.children));
-              result.hooked = true;
             }
+            result.hooked = true;
 
             memoization[r.key+';'+sp] = result;
 
