@@ -235,24 +235,6 @@ function if_def(params) {
   return [params.e, params.b, params.elif, params.el];
 }
 
-function flatten(node, accu) {
-  if(node.children === undefined) {
-    accu.push(node);
-  } else {
-    for(var i=0; i<node.children.length; i++) {
-      debugger
-      flatten(node.children[i], accu);
-    }
-  }
-}
-
-function unrollParams(params) {
-  var p = [];
-  flatten(params.p1, p);
-  flatten(params.p2, p);
-  return p;
-}
-
 function forLoop(params) {
   return [params.k, params.v, params.a, params.b];
 }
@@ -269,7 +251,6 @@ var grammarDef = {
       "p1:name assign e:EXPR",
       "p1:name",
     ],
-    //hooks: [unrollParams, false, false]
   },
   "LAMBDA": {rules:[
       "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
@@ -288,7 +269,11 @@ var grammarDef = {
   "IF": {rules:["_if W e:EXPR b:BLOCK elif:ELSE_IF* el:ELSE?"], hooks:[if_def]},
   "MATH": {rules:["e1:EXPR W? op:math W? e2:EXPR"]},
   "PATH": {rules:["PATH dot name", "PATH open_bra number close_bra", "name"]},
-  "ASSIGN": {rules:["left:EXPR W? op:assign W? right:EXPR"], hooks:[function(p){return p;}]},
+  "ASSIGN": {rules:["left:EXPR W? op:assign W? right:EXPR"], hooks:[
+    function(p){
+      return {left:p.left, op:p.op, right:p.right};
+    }]
+  },
   "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS? close_par"]},
 
@@ -412,13 +397,35 @@ var backend = {
       name = node.children[0].value;
     }
     str = "function " + name + "(";
-    str += generateParams(node.children[1], ns);
+    str += generateCode(node.children[1]);
     str += ') {';
+    for(var key in ns) {
+      if(ns[key] !== true) {
+        str += '\n'+sp()+key+'='+generateCode(ns[key]);
+      }
+    }
     if(node.children[2]) {
       str += generateCode(node.children[2]);
     }
     namespaces.pop();
     return str + '\n'+sp()+'}';
+  },
+  'FUNC_DEF_PARAMS': function(node) {
+    var str = "", i;
+    var ns = namespaces[namespaces.length -1];
+    if(node.children[0].type === 'name') {
+      ns[node.children[0].value] = true;
+      if(node.children[1] && node.children[1].type === 'assign') {
+        ns[node.children[0].value] = node.children[2];
+      }
+    }
+    for(i=0;i<node.children.length; i++) {
+      var n = node.children[i];
+      if(n.type === 'name' || n.type === 'FUNC_DEF_PARAMS' || n.type === 'comma' || n.type === 'W') {
+        str += generateCode(node.children[i]);
+      }
+    }
+    return str;
   },
   'LAMBDA': function(node) {
     var name = "";
@@ -428,10 +435,10 @@ var backend = {
       name = node.children[0].value;
     }
     str = "function " + name + "(";
-    str += generateParams(node.children[1], ns);
+    str += generateCode(node.children[1], ns);
     str += ') { return ';
     if(node.children[2]) {
-      str += generateCode(node.children[2]);
+      str += generateCode(node.children[2], ns);
     }
     namespaces.pop();
     return str + "; }";
@@ -495,7 +502,7 @@ var backend = {
   },
 };
 
-function generateCode(node) {
+function generateCode(node, ns) {
   if(!node) {
     //debugger
   }
@@ -510,7 +517,7 @@ function generateCode(node) {
     return '';
   }
   for(i=0;i<node.children.length; i++) {
-    str += generateCode(node.children[i]);
+    str += generateCode(node.children[i], ns);
   }
   return str;
 }
