@@ -89,7 +89,6 @@ function createParams(tokens) {
 function growLR(grammar, rule, stream, pos, memo) {
   var sp, result, progress = false;
   var hook = grammar[rule.key].hooks[rule.index];
-  debugger
   while(true) {
     sp = pos;
     result = evalRuleBody(grammar, rule, stream, sp);
