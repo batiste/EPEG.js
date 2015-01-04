@@ -55,12 +55,13 @@ def fib(n)
 array = [1, 2, 2 + 1]
 object = {a: 1, toto: [1, 2]}
 
-def test(a, b=10)
+// function parameters can have default values
+def test(a, b=1+1)
   a = 1
-  h = 1
-  d = 10
-  // this is a outer scope affectation
-  object := {}
+  // avoiding the error of CoffeScript: no implicit global
+  g = 1
+  // explicitly assign a value to a variable in a outer scope
+  array := [1]
   return def(f) a + 10
 
 for key, value in array
@@ -403,7 +404,7 @@ var backend = {
     str += ') {';
     for(var key in ns) {
       if(ns[key] !== true && ns[key] != undefined) {
-        str += '\n'+sp()+key+'='+generateCode(ns[key])+';';
+        str += '\n'+sp()+'if('+key+' === undefined) {'+key+'='+generateCode(ns[key])+'};';
       }
     }
     if(node.children[2]) {
