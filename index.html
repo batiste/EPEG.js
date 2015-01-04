@@ -397,11 +397,13 @@ var backend = {
       name = node.children[0].value;
     }
     str = "function " + name + "(";
-    str += generateCode(node.children[1]);
+    if(node.children[1]) {
+      str += generateCode(node.children[1]);
+    }
     str += ') {';
     for(var key in ns) {
-      if(ns[key] !== true) {
-        str += '\n'+sp()+key+'='+generateCode(ns[key]);
+      if(ns[key] !== true && ns[key] != undefined) {
+        str += '\n'+sp()+key+'='+generateCode(ns[key])+';';
       }
     }
     if(node.children[2]) {
@@ -421,7 +423,7 @@ var backend = {
     }
     for(i=0;i<node.children.length; i++) {
       var n = node.children[i];
-      if(n.type === 'name' || n.type === 'FUNC_DEF_PARAMS' || n.type === 'comma' || n.type === 'W') {
+      if(n.type === 'name' || n.type === 'FUNC_DEF_PARAMS' || n.type === 'comma' || n.type === 'window') {
         str += generateCode(node.children[i]);
       }
     }
@@ -435,7 +437,9 @@ var backend = {
       name = node.children[0].value;
     }
     str = "function " + name + "(";
-    str += generateCode(node.children[1], ns);
+    if(node.children[1]) {
+      str += generateCode(node.children[1], ns);
+    }
     str += ') { return ';
     if(node.children[2]) {
       str += generateCode(node.children[2], ns);
