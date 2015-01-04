@@ -400,7 +400,9 @@ var gram10 = EPEG.compileGrammar(grammar, tokens);
 
 assertComplete("ab", gram10);
 assertComplete("aaaabbbb", gram10);
+assertComplete("bbbbaaaa", gram10);
 assertComplete("aba", gram10);
 assertComplete("bab", gram10);
 assertIncomplete("", gram10);
 assertComplete("baba", gram10);
+assertComplete("abab", gram10);
