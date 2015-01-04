@@ -41,7 +41,9 @@ function assertComplete(input, g, log) {
       console.log(r, ts);
     }
 
-    var msg = "Incomplete parsing on: " + input + ", leftover " + ts.slice(r.consumed).map(function(i){return i.value;});
+    if(!r.complete) {
+      console.log(r.hint);
+    }
 
     assert.ok( r.complete, input );
   });
@@ -383,13 +385,22 @@ assertIncomplete("  ", gram9);
 assertIncomplete("", gram9);
 
 
-
-grammar = {
-  "START": {rules: ["A"]},
-  "A": {rules:[
-      "p1:FUNC_DEF_PARAMS comma W p2:name assign e:EXPR",
-      "p1:FUNC_DEF_PARAMS comma W p2:name"
-  ]},
-  hooks: [false, false]
+tokens = {
+  a: /^a/,
+  b: /^b/,
 };
 
+grammar = {
+  "START": {rules: ["A EOF", "B EOF"]},
+  "A": {rules:["A a", "B", "a"]},
+  "B": {rules:["B b", "A", "b"]}
+};
+
+var gram10 = EPEG.compileGrammar(grammar, tokens);
+
+assertComplete("ab", gram10);
+assertComplete("aaaabbbb", gram10);
+assertComplete("aba", gram10);
+assertComplete("bab", gram10);
+assertIncomplete("", gram10);
+assertComplete("baba", gram10);
