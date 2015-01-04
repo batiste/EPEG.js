@@ -491,7 +491,7 @@ var backend = {
     if(node.children[0]) {
       keyName = node.children[0].value;
     }
-    var str = 'for(var '+keyName+' in '+node.children[2].value+'.keys()) {\n';
+    var str = 'for(var '+keyName+' in Object.keys('+node.children[2].value+')) {\n';
     str += sp() + 'var ' + node.children[1].value + '=' + node.children[2].value + '[' + keyName + '];';
     str += generateCode(node.children[3]) +'\n}';
     return str;
