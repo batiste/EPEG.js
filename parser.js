@@ -89,8 +89,10 @@ function createParams(tokens) {
 function growLR(grammar, rule, stream, pos, memo) {
   var sp, result, progress = false;
   var hook = grammar[rule.key].hooks[rule.index];
+
   while(true) {
     sp = pos;
+
     result = evalRuleBody(grammar, rule, stream, sp);
 
     // ensure some progress is made
@@ -228,13 +230,15 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
     // Case two: we have a proper token
     } else {
-
       if(stoken.type === rtoken.type) {
-        currentNode.children.push(copyToken(stoken, rtoken));
+        //currentNode.children.push(copyToken(stoken, rtoken));
+        if(!rtoken.nonCapturing) {
+          currentNode.children.push(copyToken(stoken, rtoken));
+          sp++;
+        }
         if(!canRepeat(rtoken)) {
           rp++;
         }
-        sp++;
       } else {
         if(!canFail(rtoken, currentNode)) {
           return false;
@@ -286,30 +290,39 @@ function splitTrim(l, split) {
 }
 
 function grammarToken(token) {
+  var nonCapturing = token.charAt(0) === '!';
+  if(nonCapturing) {
+    token = token.substr(1);
+  }
   var repeat = token.charAt(token.length - 1);
   if(repeat === '*' || repeat === '?' || repeat === '+') {
     token = token.substr(0, token.length - 1);
   } else {
     repeat = false;
   }
-  var named = token.split(":");
+  var named = token.split(":"), t;
   if(named.length === 2) {
-    return {
+    t = {
       'type': named[1],
-      'repeat': repeat,
       'name' :named[0]
     };
+  } else {
+    t = {'type': token };
   }
-  return {
-    'type': token,
-    'repeat': repeat
-  };
+  t.repeat = repeat;
+  if((repeat === '*' || repeat === '+') && nonCapturing) {
+    throw "Impossible to have non capturing token that repeats";
+  }
+  if(nonCapturing) {
+    t.nonCapturing = nonCapturing;
+  }
+  return t;
 }
 
 function compileGrammar(grammar, tokenDef) {
   var keys = Object.keys(grammar), i, j;
   var allValidKeys = keys.concat(Object.keys(tokenDef));
-  var gram = {}, optional;
+  var gram = {}, optional, nonCapturing;
 
   for(i=0; i<keys.length; i++) {
     var line = grammar[keys[i]];
@@ -328,6 +341,11 @@ function compileGrammar(grammar, tokenDef) {
         }
         if(token.repeat === '*') {
           optional += 1;
+        }
+        if(token.nonCapturing) {
+          if(tokens[tokens.length - 1] != t) {
+            throw "Non capturing token has to be the last one in the rule: " + token.type;
+          }
         }
         return token;
       });

@@ -34,8 +34,19 @@ button {
 </head>
 <body>
 <h1>
-EPEG.js demo, implementation of a Python-like language
+Peacock language
 </h1>
+
+<p>A beautiful simple language that compile to JavaScript. The language doesn't try to be too smart and is mainly syntactic sugar around common JavasScript annoyances. Features:</p>
+
+<ol>
+<li>Multiline strings</li>
+<li>Significant whitespace</li>
+<li>Short function declaration and lambda expression</li>
+<li>Function parameters default values</li>
+<li>Simple <strong>for</strong> loop syntax</li>
+<li>Sensible scoping rules unlike <a href="https://donatstudios.com/CoffeeScript-Madness">CoffeeScript</a></li>
+</ol>
 
 <p>More info on the github page <a href="https://github.com/batiste/EPEG.js">https://github.com/batiste/EPEG.js</a></p>
 
@@ -43,24 +54,26 @@ EPEG.js demo, implementation of a Python-like language
 <div class="col" style="position:relative">
   <h2>Input language</h2>
 <textarea id="in">
-
 g = "multiline
 string"
 
 def fib(n)
-    if n < 2
-        return n
-    return fib(n-2) + fib(n-1)
+  if n < 2
+    return n
+  return fib(n-2) + fib(n-1)
 
 array = [1, 2, 2 + 1]
-object = {a: 1, toto: [1, 2]}
+object = {
+  sqrt: def(i) i*i,
+  toto: [1, 2]
+}
 
 // function parameters can have default values
 def test(a, b=1+1)
   a = 1
-  // avoiding the error of CoffeScript: no implicit global
+  // avoiding the error of CoffeeScript: no implicit global
   g = 1
-  // explicitly assign a value to a variable in a outer scope
+  // explicitly assign to a outer scope variable with :=
   array := [1]
   return def(f) a + 10
 
@@ -70,8 +83,7 @@ for key, value in array
   else
     console.log(key, value)
 
-array.map(def(i) fib(i * 3))
-
+array.map(def(i) fib(object.sqrt(i)))
 </textarea>
 
 <pre id="error" style=""></pre>
@@ -115,14 +127,6 @@ function currentLevel() {
   return levelStack[levelStack.length - 1];
 }
 
-function sp(mod) {
-  if(mod !== undefined) {
-    return spacer(2 * (levelStack.length + mod));
-  }
-  return spacer(2 * levelStack.length);
-}
-
-
 function indentType(l) {
   if(l > currentLevel()) {
     return 'indent';
@@ -130,7 +134,9 @@ function indentType(l) {
   if(l < currentLevel()) {
     return 'dedent';
   }
-  return 'samedent';
+  if(l === currentLevel()) {
+    return 'samedent';
+  }
 }
 
 function dent(dentType) {
@@ -140,8 +146,14 @@ function dent(dentType) {
     var indent = m[0].length - 1;
       if(indentType(indent) === dentType) {
         if(dentType == 'dedent') {
+          //var diff = currentLevel() - indent;
+          // the last dedent should consume
           levelStack.pop();
-          return spacer();
+          //if(currentLevel() === indent) {
+          //  debugger
+          //  return m[0];
+          //}
+          return '';
         }
         if(dentType == 'indent') {
           levelStack.push(indent);
@@ -243,7 +255,7 @@ forLoopCount = 1;
 
 var grammarDef = {
   "START": {rules:["LINE* EOF"]},
-  "LINE": {rules:["STATEMENT samedent*", "comment? samedent"]},
+  "LINE": {rules:["STATEMENT samedent+", "STATEMENT !dedent", "comment? samedent"]},
   "STATEMENT": {rules:["ASSIGN", "IF", "FOR", "EXPR", "RETURN"]},
   "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE+ dedent"]},
@@ -285,22 +297,24 @@ var grammarDef = {
   },
 
   "COMMA_SEPARATED_EXPR": {rules:[
-    "EXPR comma samedent? W COMMA_SEPARATED_EXPR",
+    "EXPR comma SPACE* COMMA_SEPARATED_EXPR",
     "EXPR"
   ]},
 
   "ARRAY": {rules:[
-    "open_bra c:COMMA_SEPARATED_EXPR? close_bra",
+    "open_bra SPACE* c:COMMA_SEPARATED_EXPR? SPACE* close_bra dedent?",
   ]},
 
   "MEMBERS": {rules:[
-    "name colon W EXPR comma W MEMBERS",
-    "name colon W EXPR"
+    "name colon SPACE* EXPR comma SPACE* MEMBERS",
+    "name colon SPACE* EXPR"
   ]},
 
   "OBJECT": {rules:[
-    "open_curly MEMBERS? close_curly",
+    "open_curly SPACE* MEMBERS? SPACE* close_curly dedent?",
   ]},
+
+  "SPACE": {rules:["W", "indent", "dedent", "samedent"]},
 
   "RETURN": {rules:["ret W EXPR", "ret"]},
   "RIGHT_EXPR": {rules: [
@@ -352,7 +366,7 @@ function outit() {
   forLoopCount = 1;
   lastLevel = 0;
   try {
-    var r = gram.parse(din.value);
+    var r = gram.parse(din.value+"\n");
     //console.log(EPEG.tokenize(din.value, gram.tokenDef));
     lastLevel = 0;
     if(!r.complete) {
@@ -389,7 +403,28 @@ function generateParams(ps, ns) {
   return str;
 }
 
+var depth = 0;
+function sp(mod) {
+  if(mod) {
+    return spacer(2 * (depth+mod));
+  }
+  return spacer(2 * depth);
+}
+
 var backend = {
+
+  'dedent': function(node) {
+    depth = Math.max(0, depth - 1);
+    return '';
+  },
+  'indent': function(node) {
+    depth = depth + 1;
+    return '\n'+sp();
+  },
+  'samedent': function(node) {
+    return '\n'+sp();
+  },
+
   'FUNC_DEF': function(node) {
     var name = "";
     namespaces.push({});
@@ -404,7 +439,7 @@ var backend = {
     str += ') {';
     for(var key in ns) {
       if(ns[key] !== true && ns[key] != undefined) {
-        str += '\n'+sp()+'if('+key+' === undefined) {'+key+'='+generateCode(ns[key])+'};';
+        str += '\n'+sp(1)+'if('+key+' === undefined) {'+key+'='+generateCode(ns[key])+'};';
       }
     }
     if(node.children[2]) {
@@ -486,21 +521,27 @@ var backend = {
     return str;
   },
   'FOR': function(node) {
-    var keyName = "_index"+forLoopCount;
+    var keyIndexName = "_index"+forLoopCount;
+    var keyArrayName = "_keys"+forLoopCount;
     forLoopCount++;
+    var indexName = false;
     if(node.children[0]) {
-      keyName = node.children[0].value;
+      indexName = node.children[0].value;
     }
-    var str = 'for(var '+keyName+' in Object.keys('+node.children[2].value+')) {\n';
-    str += sp() + 'var ' + node.children[1].value + '=' + node.children[2].value + '[' + keyName + '];';
+    var str = 'var '+keyArrayName+' = Object.keys('+node.children[2].value+');\n';
+    str += sp() + 'for(var '+keyIndexName+'=0; '+keyIndexName+' < '+keyArrayName+'.length; '+keyIndexName+'++ ) {\n';
+    if(indexName) {
+      str += sp(1) + 'var ' + indexName + ' = ' + keyArrayName +'[' + keyIndexName + '];\n';
+    }
+    str += sp(1) + 'var ' + node.children[1].value + ' = ' + node.children[2].value + '[' + keyArrayName +'[' + keyIndexName + ']];';
     str += generateCode(node.children[3]) +'\n}';
     return str;
   },
   'ELSE_IF': function(node) {
-    return 'else if('+generateCode(node.children[0])+') {'+generateCode(node.children[1])+'\n'+sp()+'}';
+    return ' else if('+generateCode(node.children[0])+') {'+generateCode(node.children[1])+ '\n'+sp()+'}';
   },
   'ELSE': function(node) {
-    return 'else {'+generateCode(node.children[0])+'\n'+sp()+'}';
+    return ' else {'+generateCode(node.children[0])+ '\n'+sp()+'}';
   },
   'string': function(node) {
     return node.value.replace(/\n/g, "\\\n");

@@ -385,21 +385,44 @@ assertIncomplete("  ", gram9);
 assertIncomplete("", gram9);
 
 
+// this is an indirect recursion grammar which
+// is not supposed to work whith this library yet
+
 tokens = {
   a: /^a/,
   b: /^b/,
 };
 
 grammar = {
-  "START": {rules: ["A EOF", "B EOF"]},
+  "START": {rules: ["A EOF"]},
   "A": {rules:["A a", "B", "a"]},
   "B": {rules:["B b", "A", "b"]}
 };
+
+/*
+decomposition of "baba"
+
+ A a
+ |
+ B->B b
+    |
+    A->A a
+       |
+       B -> b
+
+A -> B b -> A a -> B -> b
+
+A -> Aba
+
+
+*/
+
 
 var gram10 = EPEG.compileGrammar(grammar, tokens);
 
 assertComplete("ab", gram10);
 assertComplete("aaaabbbb", gram10);
+
 assertComplete("bbbbaaaa", gram10);
 assertComplete("aba", gram10);
 assertComplete("bab", gram10);
