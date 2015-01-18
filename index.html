@@ -8,18 +8,19 @@ body, html {
 }
 textarea {
   width:100%;
-  height:800px;
+  height:400px;
   font-size:14px;
 }
 div.col {
   float:left;
   width:30%;
   margin-right:3%;
+  position:relative;
 }
 h1, h2, h3 {
   margin: 0.4em 0;
 }
-#error {
+.error {
   padding:0 1em;
   background: #fee;
   position:absolute;
@@ -52,77 +53,85 @@ CokeScript
 
 <p>More info on the github page <a href="https://github.com/batiste/EPEG.js">https://github.com/batiste/EPEG.js</a></p>
 
-<div style="clear:both">
-<div class="col" style="position:relative">
-  <h2>Input language</h2>
-<textarea id="in">
-// Objects
+<div style="clear:both" id="egClass">
+<div class="col">
+<h2>Classes</h2>
+<textarea class="in">
 class Animal
   
-  def constructor(name="unknown")
+  def constructor(name="unknown", diet="grass")
     this.name = name
+    this.diet = diet
   
-  def eat(what="grass")
-    this.diet = what
+  def eat()
+    return this.name + " eat " + this.diet
 
 class Tiger(Animal)
-  
+  def constructor(name)
+    this.super(name, "meat")
+
+class Cow(Animal)
   def constructor()
-   this.name = "Tigger"
+    this.name = "Alberta"
 
-tiger = Tiger()
-tiger.diet = "meat"
-
-g = "multiline
-string"
-
-def fib(n)
-  if n < 2
-    return n
-  return fib(n-2) + fib(n-1)
-
-array = [1, 2, 2 + 1]
-object = {
-  sqrt: def(i) i*i,
-  toto: [1, 2]
-}
-
-// function parameters can have default values
-def test(a, b=1+1)
-  a = 1
-  // avoiding the error of CoffeeScript: no implicit global
-  g = 1
-  // explicitly assign to a outer scope variable with :=
-  array := [1]
-  return def(f) a + 10
-
-for key, value in array
-  if value == 1
-    break
-  else
-    console.log(key, value)
-
-array.map(def(i) fib(object.sqrt(i)))
+tiger = Tiger("Wilson")
+cow = Cow()
+tiger.eat() + ", " + cow.eat()
 </textarea>
 
+<pre class="error" style=""></pre>
 
-
-<pre id="error" style=""></pre>
-
-
-
-</div>
-<div class="col">
-<h2>AST</h2>
-<textarea id="out"></textarea>
 </div>
 
 <div class="col">
-<h2>Output language</h2>
-<textarea id="code"></textarea>
-<button id="evalButton">Eval</button>
-<pre id="evalResult"></pre>
+  <h2>AST</h2>
+  <textarea class="out"></textarea>
 </div>
+
+
+<div class="col">
+  <h2>JavaScript Output</h2>
+  <textarea class="code"></textarea>
+  <button class="evalButton">Eval</button>
+  <pre class="evalResult"></pre>
+</div>
+
+</div>
+
+
+
+
+<div style="clear:both" id="egFunction">
+<div class="col">
+<h2>Functions</h2>
+<textarea class="in">
+def fib(n)
+    if n < 2
+        return n
+    return fib(n-2) + fib(n-1)
+
+array = [1, 2, 3, 4, 5, 6]
+
+array.map(fib)
+
+</textarea>
+
+<pre class="error" style=""></pre>
+
+</div>
+
+<div class="col">
+  <h2>AST</h2>
+  <textarea class="out"></textarea>
+</div>
+
+<div class="col">
+  <h2>JavaScript Output</h2>
+  <textarea class="code"></textarea>
+  <button class="evalButton">Eval</button>
+  <pre class="evalResult"></pre>
+</div>
+
 </div>
 
 <h2>Grammar definition</h2>
@@ -139,37 +148,43 @@ array.map(def(i) fib(object.sqrt(i)))
 
 window.onload = function() {
 
-function dGet(id){ return document.getElementById(id); }
-var din = dGet('in');
-var dout = dGet('out');
-var code = dGet('code');
-var gOut = dGet('grammarOut');
-gOut.textContent = JSON.stringify(CokeScript.grammarDef, false, 2);
-var tOut = dGet('tokenOut');
-tOut.textContent = JSON.stringify(CokeScript.tokenDef, false, 2);
+function initExample(dom) {
+  function dGet(cls){ return dom.getElementsByClassName(cls)[0]; }
+  var din = dGet('in');
+  var dout = dGet('out');
+  var code = dGet('code');
 
-dGet('evalButton').onclick = function() {
-  var result = eval(code.value);
-  dGet('evalResult').textContent = result;
-};
+  dGet('evalButton').onclick = function() {
+    var result = eval(code.value);
+    dGet('evalResult').textContent = result;
+  };
 
-din.onkeyup = function() {
-  outit();
-};
+  din.onkeyup = function() {
+    outit();
+  };
 
-function outit() {
-  try {
-    var result = CokeScript.generateModule(din.value);
-    code.value = result.code;
-    dout.value = JSON.stringify(result.ast, false, 2);
-    document.getElementById("error").textContent = "";
-  } catch(e) {
-    document.getElementById("error").textContent = String(e);
-    throw e;
+  function outit() {
+    try {
+      var result = CokeScript.generateModule(din.value);
+      code.value = result.code;
+      dout.value = JSON.stringify(result.ast, false, 2);
+      dGet("error").textContent = "";
+    } catch(e) {
+      dGet("error").textContent = String(e);
+      throw e;
+    }
   }
+
+  outit();
 }
 
-outit();
+var gOut = document.getElementById('grammarOut');
+gOut.textContent = JSON.stringify(CokeScript.grammarDef, false, 2);
+var tOut = document.getElementById('tokenOut');
+tOut.textContent = JSON.stringify(CokeScript.tokenDef, false, 2);
+
+initExample(document.getElementById('egClass'));
+initExample(document.getElementById('egFunction'));
 
 };
 

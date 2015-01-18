@@ -341,8 +341,9 @@ var backend = {
     cons_str += sp() + '\n}';
 
     if(parent) {
-      cons_str += '\n'+sp() + name + '.prototype = new ' + parent.value + '();';
-      cons_str += '\n'+sp() + name + '.prototype.constructor='+name+';';
+      cons_str += '\n'+sp() + name + '.prototype = new ' + parent.value + ';';
+      cons_str += '\n'+sp() + name + '.prototype.constructor = '+name+';';
+      cons_str += '\n'+sp() + name + '.prototype.super = function(){' + parent.value + '.apply(this, arguments);}';
     }
 
     namespaces.pop();
