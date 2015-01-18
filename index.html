@@ -34,17 +34,17 @@ button {
 </head>
 <body>
 <h1>
-Peacock language
+CokeScript
 </h1>
 
-<p>A beautiful simple language that compile to JavaScript. The language doesn't try to be too smart and is mainly syntactic sugar around common JavasScript annoyances. Features:</p>
+<p>CokeScript is a Python-like language that compile to JavaScript. CokeScript doesn't try to be too smart and is mainly syntactic sugar around common JavasScript annoyances. Features:</p>
 
 <ol>
 <li>Multiline strings</li>
 <li>Significant whitespace</li>
 <li>Short function declaration and lambda expression</li>
 <li>Function parameters default values</li>
-<li>Simple <strong>for</strong> loop syntax</li>
+<li>Simple <strong>for</strong> loop syntax that works on Array or Object</li>
 <li>Sensible scoping rules unlike <a href="https://donatstudios.com/CoffeeScript-Madness">CoffeeScript</a></li>
 <li>Classes and inheritance</li>
 </ol>
@@ -55,9 +55,7 @@ Peacock language
 <div class="col" style="position:relative">
   <h2>Input language</h2>
 <textarea id="in">
-g = "multiline
-string"
-
+// Objects
 class Animal
   
   def constructor(name="unknown")
@@ -66,8 +64,16 @@ class Animal
   def eat(what="grass")
     this.diet = what
 
-tiger = Animal("tiger")
-tiger.eat("meat")
+class Tiger(Animal)
+  
+  def constructor()
+   this.name = "Tigger"
+
+tiger = Tiger()
+tiger.diet = "meat"
+
+g = "multiline
+string"
 
 def fib(n)
   if n < 2
@@ -127,7 +133,7 @@ array.map(def(i) fib(object.sqrt(i)))
 <pre id="tokenOut"></pre>
 
 <script src='parser.js'></script>
-<script src='pycock.js'></script>
+<script src='cokescript.js'></script>
 <script>
 
 window.onload = function() {
@@ -137,9 +143,9 @@ var din = dGet('in');
 var dout = dGet('out');
 var code = dGet('code');
 var gOut = dGet('grammarOut');
-gOut.textContent = JSON.stringify(pycock.grammarDef, false, 2);
+gOut.textContent = JSON.stringify(CokeScript.grammarDef, false, 2);
 var tOut = dGet('tokenOut');
-tOut.textContent = JSON.stringify(pycock.tokenDef, false, 2);
+tOut.textContent = JSON.stringify(CokeScript.tokenDef, false, 2);
 
 dGet('evalButton').onclick = function() {
   var result = eval(code.value);
@@ -152,7 +158,7 @@ din.onkeyup = function() {
 
 function outit() {
   try {
-    var result = pycock.generateModule(din.value);
+    var result = CokeScript.generateModule(din.value);
     code.value = result.code;
     dout.value = JSON.stringify(result.ast, false, 2);
     document.getElementById("error").textContent = "";
