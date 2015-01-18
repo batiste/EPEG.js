@@ -1,5 +1,22 @@
+/*
+  PyCock language by Batiste Bieler 2015
+  Implemented using EPEG.JS
+*/
+
+(function(){
 "use strict";
 
+var depth = 0;
+var forLoopCount = 1;
+var namespaces = [{}];
+var levelStack = [0];
+
+function resetGlobal() {
+  namespaces = [{}];
+  forLoopCount = 1;
+  levelStack = [0];
+  depth = 0;
+}
 
 // token are matched in order of declaration
 // TODO: add functions
@@ -38,7 +55,6 @@ var tokenDef = {
   string: stringDef,
 };
 
-var levelStack = [0];
 function currentLevel() {
   return levelStack[levelStack.length - 1];
 }
@@ -62,13 +78,7 @@ function dent(dentType) {
     var indent = m[0].length - 1;
       if(indentType(indent) === dentType) {
         if(dentType == 'dedent') {
-          //var diff = currentLevel() - indent;
-          // the last dedent should consume
           levelStack.pop();
-          //if(currentLevel() === indent) {
-          //  debugger
-          //  return m[0];
-          //}
           return '';
         }
         if(dentType == 'indent') {
@@ -79,7 +89,6 @@ function dent(dentType) {
     }
   };
 }
-
 
 function stringDef(input) {
   if(input.charAt(0) === '"') {
@@ -142,17 +151,25 @@ function forLoop(params) {
   return [params.k, params.v, params.a, params.b];
 }
 
-
 var grammarDef = {
   "START": {rules:["LINE* EOF"]},
   "LINE": {rules:["STATEMENT samedent+", "STATEMENT !dedent", "comment? samedent"]},
   "STATEMENT": {rules:["ASSIGN", "IF", "FOR", "EXPR", "RETURN", "CLASS"]},
   "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE+ dedent"]},
-  "CLASS_METHODS": {rules: ["samedent* FUNC_DEF samedent*"]},
+  "CLASS_METHODS": {
+      rules: ["samedent* f:FUNC_DEF samedent*"],
+      hooks: [ function(p){ return p.f; }]
+  },
   "CLASS": {
-    rules: ["class n:name indent m:CLASS_METHODS* dedent"],
-    hooks: [function(p){ return [p.n, p.m]; }]
+    rules: [
+      "class n:name open_par p:name close_par indent m:CLASS_METHODS* dedent",
+      "class n:name indent m:CLASS_METHODS* dedent"
+    ],
+    hooks: [
+      function(p){ return {name:p.n, methods:p.m, parent:p.p}; },
+      function(p){ return {name:p.n, methods:p.m}; }
+    ]
   },
   "FUNC_DEF_PARAMS": {rules:[
       "p1:FUNC_DEF_PARAMS comma W p2:FUNC_DEF_PARAMS",
@@ -243,7 +260,6 @@ function spacer(n) {
 }
 
 
-var namespaces = [{}];
 
 function generateParams(ps, ns) {
   var str = '';
@@ -265,15 +281,12 @@ function generateParams(ps, ns) {
   return str;
 }
 
-var depth = 0;
 function sp(mod) {
   if(mod) {
     return spacer(2 * (depth+mod));
   }
   return spacer(2 * depth);
 }
-
-var forLoopCount = 1;
 
 var backend = {
 
@@ -289,12 +302,16 @@ var backend = {
     return '\n'+sp();
   },
   'CLASS': function(node) {
-    var name = node.children[0].value, i;
-    var funcs = node.children[1];
+    var name = node.children.name.value, i;
+    var funcs = node.children.methods;
+    var parent = node.children.parent;
     var str = '';
     var constructor = null;
     for(i=0;i<funcs.length; i++) {
-      var func_def = funcs[i].children[0];
+      var func_def = funcs[i].children;
+      if(!func_def.children) {
+        debugger;
+      }
       var func_name = func_def.children[0].value;
       if(func_name === 'constructor') {
         constructor = func_def;
@@ -325,6 +342,11 @@ var backend = {
       cons_str += generateCode(body);
     }
     cons_str += sp() + '\n}';
+
+    if(parent) {
+      cons_str += '\n'+sp() + name + '.prototype = new ' + parent.value + '();';
+      cons_str += '\n'+sp() + name + '.prototype.constructor='+name+';';
+    }
 
     namespaces.pop();
     return cons_str + str;
@@ -472,18 +494,15 @@ function generateCode(node, ns) {
   return str;
 }
 
-var gram = EPEG.compileGrammar(grammarDef, tokenDef);
-
 function generateModule(input) {
-  namespaces = [{}];
-  forLoopCount = 1;
-  levelStack = [0];
   var ast = gram.parse(input + "\n");
   if(!ast.complete) {
     throw ast.hint;
   }
   return {ast:ast, code:generateCode(ast)};
 }
+
+var gram = EPEG.compileGrammar(grammarDef, tokenDef);
 
 window.pycock = {
   grammar: gram,
@@ -492,3 +511,5 @@ window.pycock = {
   generateModule: generateModule,
   generateCode: generateCode
 };
+
+})();
