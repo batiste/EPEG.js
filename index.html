@@ -13,7 +13,7 @@ textarea {
 }
 div.col {
   float:left;
-  width:30%;
+  width:45%;
   margin-right:3%;
   position:relative;
 }
@@ -83,12 +83,6 @@ tiger.eat()
 </div>
 
 <div class="col">
-  <h2>AST</h2>
-  <textarea class="out"></textarea>
-</div>
-
-
-<div class="col">
   <h2>JavaScript Output</h2>
   <textarea class="code"></textarea>
   <button class="evalButton">Eval</button>
@@ -124,10 +118,6 @@ a + " " + c
 
 </div>
 
-<div class="col">
-  <h2>AST</h2>
-  <textarea class="out"></textarea>
-</div>
 
 <div class="col">
   <h2>JavaScript Output</h2>
@@ -165,10 +155,6 @@ object.c
 
 </div>
 
-<div class="col">
-  <h2>AST</h2>
-  <textarea class="out"></textarea>
-</div>
 
 <div class="col">
   <h2>JavaScript Output</h2>
@@ -206,7 +192,7 @@ window.onload = function() {
 function initExample(dom) {
   function dGet(cls){ return dom.getElementsByClassName(cls)[0]; }
   var din = dGet('in');
-  var dout = dGet('out');
+  //var dout = dGet('out');
   var code = dGet('code');
 
   dGet('evalButton').onclick = function() {
@@ -222,7 +208,7 @@ function initExample(dom) {
     try {
       var result = CokeScript.generateModule(din.value);
       code.value = result.code;
-      dout.value = JSON.stringify(result.ast, false, 2);
+      //dout.value = JSON.stringify(result.ast, false, 2);
       dGet("error").textContent = "";
     } catch(e) {
       dGet("error").textContent = String(e);
