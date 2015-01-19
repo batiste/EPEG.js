@@ -1,20 +1,20 @@
 
-var tokens = {
-  number: /^-?[0-9]+\.?[0-9]*/,
-  term: /^[\+|-]/,
-  fact: /^[\*|/]/,
-  w: /^[ ]/,
-  func_def: /^def/,
-  name: /^[a-zA-Z]+/,
-  dot: /^\./,
-  openP: /^\(/,
-  closeP: /^\)/,
-  comma: /^\,/,
-  openB: /^\[/,
-  closeB: /^\]/,
-  assign: /^\=/,
-  newLine: /^\n/,
-};
+var tokens = [
+  {key:"number", reg:/^-?[0-9]+\.?[0-9]*/},
+  {key:"term", reg:/^[\+|-]/},
+  {key:"fact", reg:/^[\*|/]/},
+  {key:"w", reg:/^[ ]/},
+  {key:"func_def", reg:/^def/},
+  {key:"name", reg:/^[a-zA-Z]+/},
+  {key:"dot", reg:/^\./},
+  {key:"openP", reg:/^\(/},
+  {key:"closeP", reg:/^\)/},
+  {key:"comma", reg:/^\,/},
+  {key:"openB", reg:/^\[/},
+  {key:"closeB", reg:/^\]/},
+  {key:"assign", reg:/^\=/},
+  {key:"newLine", reg:/^\n/},
+];
 
 var grammar = {
   "TERM": {rules:["TERM w? term w? FACT", "FACT"]},
@@ -36,7 +36,7 @@ function assertComplete(input, g, log) {
   QUnit.test( input, function( assert ) {
 
     var r = g.parse(input);
-    var ts = EPEG.tokenize(input, g.tokenDef);
+    var ts = EPEG.tokenize(input, g);
     if(log) {
       console.log(r, ts);
     }
@@ -165,22 +165,22 @@ QUnit.test( "Test that function calling with $ works", function( assert ) {
 
 
 
-tokens = {
-  number: /^-?[0-9]+\.?[0-9]*/,
-  math: /^[\+|-|\*|/]/,
-  fact: /^[\*|/]/,
-  w: /^[ ]/,
-  func_def: /^def/,
-  name: /^[a-zA-Z][a-zA-Z1-9]*/,
-  dot: /^\./,
-  openP: /^\(/,
-  closeP: /^\)/,
-  comma: /^\,/,
-  openB: /^\[/,
-  closeB: /^\]/,
-  assign: /^\=/,
-  newLine: /^\n/,
-};
+tokens = [
+  {key:"number", reg:/^-?[0-9]+\.?[0-9]*/},
+  {key:"math", reg:/^[\+|-|\*|/]/},
+  {key:"fact", reg:/^[\*|/]/},
+  {key:"w", reg:/^[ ]/},
+  {key:"func_def", reg:/^def/},
+  {key:"name", reg:/^[a-zA-Z][a-zA-Z1-9]*/},
+  {key:"dot", reg:/^\./},
+  {key:"openP", reg:/^\(/},
+  {key:"closeP", reg:/^\)/},
+  {key:"comma", reg:/^\,/},
+  {key:"openB", reg:/^\[/},
+  {key:"closeB", reg:/^\]/},
+  {key:"assign", reg:/^\=/},
+  {key:"newLine", reg:/^\n/},
+];
 
 grammar = {
   "MATH": {rules:["EXPR w? math w? EXPR"]},
@@ -237,11 +237,11 @@ assertComplete("hello.5\n", gram3);
 assertComplete("def test(a, b)\n  a = 1\nb = 2\ntest(1, 2)\n", gram3);
 
 
-tokens = {
-  isHello: function(input) { if(input == 'hello'){ return input; } },
-  w: /^[ ]/,
-  n: /^[a-z]+/,
-};
+tokens = [
+  {key:"isHello", func:function(input) { if(input == 'hello'){ return input; }} },
+  {key:"w", reg:/^[ ]/},
+  {key:"n", reg:/^[a-z]+/},
+];
 
 grammar = {
   "START": {rules: ["isHello EOF"]}
@@ -254,12 +254,12 @@ assertIncomplete(" hello", gram4);
 assertIncomplete("hello ", gram4);
 
 
-tokens = {
-  number: /^[0-9]/,
-  a: /^a/,
-  b: /^b/,
-  c: /^c/,
-};
+tokens = [
+  {key:"number", reg:/^[0-9]/},
+  {key:"a", reg:/^a/},
+  {key:"b", reg:/^b/},
+  {key:"c", reg:/^c/},
+];
 
 grammar = {
   "EXPR": {rules: [ "EXPR b EXPR", "EXPR c EXPR", "a EXPR a", "number"]},
@@ -278,11 +278,11 @@ assertComplete("1b1c1", gram5);
 assertComplete("1c1b1", gram5);
 
 
-tokens = {
-  number: /^[0-9]/,
-  openP: /^\(/,
-  closeP: /^\)/,
-};
+tokens = [
+  {key:"number", reg:/^[0-9]/},
+  {key:"openP", reg:/^\(/},
+  {key:"closeP", reg:/^\)/},
+];
 
 
 grammar = {
@@ -297,10 +297,10 @@ assertComplete("(0)", gram6);
 assertComplete("((0))", gram6);
 assertComplete("(((9)))", gram6);
 
-tokens = {
-  number: /^[0-9]/,
-  w: /^[ ]/,
-};
+tokens = [
+  {key:"number", reg:/^[0-9]/},
+  {key:"w", reg:/^[ ]/},
+];
 
 grammar = {
   "EXPR": {rules:["number w"]},
@@ -388,10 +388,10 @@ assertIncomplete("", gram9);
 // this is an indirect recursion grammar which
 // is not supposed to work whith this library yet
 
-tokens = {
-  a: /^a/,
-  b: /^b/,
-};
+tokens = [
+  {key:"a", reg:/^a/},
+  {key:"b", reg:/^b/},
+];
 
 grammar = {
   "START": {rules: ["A EOF"]},

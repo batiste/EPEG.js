@@ -21,11 +21,11 @@ directly formatted.
 Example of a valid grammar
 
 ```javascript
-var tokensDef = {
-  number: /^-?[0-9]+\.?[0-9]*/,
-  operator: /^[-|\+|\*|/|%]/,
-  w: /^[ ]/
-};
+var tokensDef = [
+  {key:"number", reg:/^-?[0-9]+\.?[0-9]*/},
+  {key:"operator", reg:/^[-|\+|\*|/|%]/},
+  {key:"w", reg:/^[ ]/}
+];
 
 var grammarDef = {
   // You need to start you grammar with the START rule.
@@ -71,11 +71,11 @@ The contract is that you need to return the matched string. This string
 has to be at the start of the input.
 
 ```javascript
-tokens = {
-  isHello: function(input) { if(input == 'hello'){ return input; } },
-  w: /^[ ]/,
-  n: /^[a-z]+/
-};
+tokens = [
+  {key:"isHello", func:function(input) { if(input == 'hello'){ return input; }} },
+  {key:"w", reg:/^[ ]/},
+  {key:"n", reg:/^[a-z]+/}
+];
 ```
 
 ### Modifiers

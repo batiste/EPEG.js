@@ -20,40 +20,39 @@ function resetGlobal() {
 
 // token are matched in order of declaration
 // TODO: add functions
-var tokenDef = {
-  comment: commentDef,
-  function_def: defDef,
-  class: /^class /,
-  ret: /^return/,
-  _if: /^if /,
-  _elseif: /^elseif /,
-  _else: /^else/,
-  r_arrow: /^\-\>/,
-  for_loop: /^for /,
-  _in: /^in /,
-  name: /^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/, // 30 chars max
-  math_operators: /^(\+\+|\-\-)/,
-  binary_operators: /^(\&\&|\|\||\&|\||<<|\>\>)/,
-  comparison: /^(<=|>=|<|>|===|!=|==)/,
-  assign: /^(\+=|-=|=|:=)/,
-  number: /^[0-9]+\.?[0-9]*/, // only positive for now
-  comma: /^\,/,
-  dot: /^\./,
-  colon: /^\:/,
-  open_par: /^\(/,
-  close_par: /^\)/,
-  open_bra: /^\[/,
-  close_bra: /^\]/,
-  open_curly: /^\{/,
-  close_curly: /^\}/,
-  math: /^[-|\+|\*|/|%]/,
-  samedent: dent('samedent'),
-  dedent: dent('dedent'),
-  indent: dent('indent'),
+var tokenDef = [
+  {key:"comment", func:commentDef},
+  {key:"function_def", func: defDef},
+  {key:"class", reg:/^class /},
+  {key:"ret", reg:/^return/},
+  {key:"if", reg:/^if /},
+  {key:"elseif", reg:/^elseif /},
+  {key:"else", reg:/^else/},
+  {key:"for_loop", reg:/^for /},
+  {key:"in", reg:/^in /},
+  {key:"name", reg:/^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/}, // 30 chars max
+  {key:"math_operators", reg:/^(\+\+|\-\-)/},
+  {key:"binary_operators", reg:/^(\&\&|\|\||\&|\||<<|\>\>)/},
+  {key:"comparison", reg:/^(<=|>=|<|>|===|!=|==)/},
+  {key:"assign", reg:/^(\+=|-=|=|:=)/},
+  {key:"number", reg:/^[0-9]+\.?[0-9]*/}, // only positive for now
+  {key:"comma", reg:/^\,/},
+  {key:"dot", reg:/^\./},
+  {key:"colon", reg:/^\:/},
+  {key:"open_par", reg:/^\(/},
+  {key:"close_par", reg:/^\)/},
+  {key:"open_bra", reg:/^\[/},
+  {key:"close_bra", reg:/^\]/},
+  {key:"open_curly", reg:/^\{/},
+  {key:"close_curly", reg:/^\}/},
+  {key:"math", reg:/^[-|\+|\*|/|%]/},
+  {key:"samedent", func:dent('samedent')},
+  {key:"dedent", func:dent('dedent')},
+  {key:"indent", func:dent('indent')},
   //newline: /^(\r?\n|$)/,
-  W: /^[ ]/,
-  string: stringDef,
-};
+  {key:"W", reg:/^[ ]/},
+  {key:"string", func:stringDef}
+];
 
 function currentLevel() {
   return levelStack[levelStack.length - 1];
@@ -189,9 +188,9 @@ var grammarDef = {
     ],
     hooks: [f_def, f_def]
   },
-  "ELSE_IF": {rules:["samedent _elseif e:EXPR b:BLOCK"], hooks:[else_if_def]},
-  "ELSE": {rules:["samedent _else b:BLOCK"], hooks:[else_def]},
-  "IF": {rules:["_if e:EXPR b:BLOCK elif:ELSE_IF* el:ELSE?"], hooks:[if_def]},
+  "ELSE_IF": {rules:["samedent elseif e:EXPR b:BLOCK"], hooks:[else_if_def]},
+  "ELSE": {rules:["samedent else b:BLOCK"], hooks:[else_def]},
+  "IF": {rules:["if e:EXPR b:BLOCK elif:ELSE_IF* el:ELSE?"], hooks:[if_def]},
   "MATH": {rules:["e1:EXPR W? op:math W? e2:EXPR"]},
   "PATH": {rules:["PATH dot name", "PATH open_bra number close_bra", "name"]},
   "ASSIGN": {rules:["left:EXPR W? op:assign W? right:EXPR"], hooks:[
@@ -203,8 +202,8 @@ var grammarDef = {
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS? close_par"]},
 
   "FOR": {rules:[
-    "for_loop k:name comma W v:name W _in a:name b:BLOCK",
-    "for_loop v:name W _in a:name b:BLOCK"],
+    "for_loop k:name comma W v:name W in a:name b:BLOCK",
+    "for_loop v:name W in a:name b:BLOCK"],
     hooks: [forLoop, forLoop]
   },
 
@@ -334,16 +333,15 @@ var backend = {
         cons_str += '\n'+sp(1)+'if('+key+' === undefined) {'+key+'='+generateCode(ns[key])+'};';
       }
     }
-
     if(body) {
       cons_str += generateCode(body);
     }
     cons_str += sp() + '\n}';
 
     if(parent) {
-      cons_str += '\n'+sp() + name + '.prototype = new ' + parent.value + ';';
-      cons_str += '\n'+sp() + name + '.prototype.constructor = '+name+';';
-      cons_str += '\n'+sp() + name + '.prototype.super = function(){' + parent.value + '.apply(this, arguments);}';
+      cons_str += '\n'+sp() + name + '.prototype = Object.create(' + parent.value + '.prototype);';
+      cons_str += '\n'+sp() + name + '.prototype.constructor = '+name+'';
+      //cons_str += '\n'+sp() + name + '.prototype.super = function(){' + parent.value + '.apply(this, arguments);}';
     }
 
     namespaces.pop();
@@ -493,6 +491,7 @@ function generateCode(node, ns) {
 }
 
 function generateModule(input) {
+  resetGlobal();
   var ast = gram.parse(input + "\n");
   if(!ast.complete) {
     throw ast.hint;

@@ -66,17 +66,16 @@ class Animal
   def eat()
     return this.name + " eat " + this.diet
 
-class Tiger(Animal)
+class Cats(Animal)
   def constructor(name)
-    this.super(name, "meat")
+    Animal.call(this, name, "meat")
 
-class Cow(Animal)
-  def constructor()
-    this.name = "Alberta"
+class Tiger(Cats)
+  def constructor(name)
+    Cats.call(this, name)
 
 tiger = Tiger("Wilson")
-cow = Cow()
-tiger.eat() + ", " + cow.eat()
+tiger.eat()
 </textarea>
 
 <pre class="error" style=""></pre>
@@ -88,6 +87,47 @@ tiger.eat() + ", " + cow.eat()
   <textarea class="out"></textarea>
 </div>
 
+
+<div class="col">
+  <h2>JavaScript Output</h2>
+  <textarea class="code"></textarea>
+  <button class="evalButton">Eval</button>
+  <pre class="evalResult"></pre>
+</div>
+
+</div>
+
+
+
+
+<div style="clear:both" id="egScope">
+<div class="col">
+<h2>Scope</h2>
+<textarea class="in">
+a = "string
+on multiple
+lines"
+
+c = 1 + 1
+
+def testScope(b)
+  a = "does not erase the outer scope string"
+  b = "No var if it's a function param"
+  c := "Explicit assignment to parent scope variable"
+  return a
+
+testScope()
+a + " " + c
+</textarea>
+
+<pre class="error" style=""></pre>
+
+</div>
+
+<div class="col">
+  <h2>AST</h2>
+  <textarea class="out"></textarea>
+</div>
 
 <div class="col">
   <h2>JavaScript Output</h2>
@@ -103,7 +143,7 @@ tiger.eat() + ", " + cow.eat()
 
 <div style="clear:both" id="egFunction">
 <div class="col">
-<h2>Functions</h2>
+<h2>Functions and Loops</h2>
 <textarea class="in">
 def fib(n)
     if n < 2
@@ -111,8 +151,13 @@ def fib(n)
     return fib(n-2) + fib(n-1)
 
 array = [1, 2, 3, 4, 5, 6]
+double_fibo = array.map(def(i) fib(i*2))
 
-array.map(fib)
+object = {a:1, b:2, c:4}
+for key, value in object
+  object[key] = fib(value)
+
+object.c
 
 </textarea>
 
@@ -133,6 +178,16 @@ array.map(fib)
 </div>
 
 </div>
+
+
+
+
+
+
+
+
+
+
 
 <h2>Grammar definition</h2>
 
@@ -185,6 +240,8 @@ tOut.textContent = JSON.stringify(CokeScript.tokenDef, false, 2);
 
 initExample(document.getElementById('egClass'));
 initExample(document.getElementById('egFunction'));
+initExample(document.getElementById('egScope'));
+
 
 };
 

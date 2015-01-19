@@ -10,9 +10,9 @@
 (function(){
 "use strict";
 
-function tokenize(input, tokens) {
-  // this keep the order of declaration
-  var keys = Object.keys(tokens);
+function tokenize(input, gram) {
+  var keys = gram.tokenKeys;
+  var tokens = gram.tokenMap;
   var stream = [];
   var len = input.length, candidate, i, key, copy = input, lastToken = null;
   var pointer = 0;
@@ -22,18 +22,20 @@ function tokenize(input, tokens) {
     for(i=0; i<keys.length; i++) {
       key = keys[i];
       var token = tokens[key], match;
-      if(typeof token === 'function') {
-        match = token(input);
+      if(token.func) {
+        match = token.func(input);
         if(match !== undefined) {
           candidate = match;
           break;
         }
-      } else {
-        match = input.match(token);
+      } else if(token.reg){
+        match = input.match(token.reg);
         if(match !== null) {
           candidate = match[0];
           break;
         }
+      } else {
+        throw "Invalid token " + key + " without a reg or fund property";
       }
     }
     if(candidate !== null) {
@@ -321,8 +323,17 @@ function grammarToken(token) {
 
 function compileGrammar(grammar, tokenDef) {
   var keys = Object.keys(grammar), i, j;
-  var allValidKeys = keys.concat(Object.keys(tokenDef));
   var gram = {}, optional, nonCapturing;
+
+  gram.tokenDef = tokenDef;
+  gram.tokenKeys = [];
+  gram.tokenMap = {};
+  tokenDef.map(function(t) {
+    gram.tokenMap[t.key] = t;
+    gram.tokenKeys.push(t.key);
+  });
+
+  var allValidKeys = keys.concat(gram.tokenKeys);
 
   for(i=0; i<keys.length; i++) {
     var line = grammar[keys[i]];
@@ -357,7 +368,6 @@ function compileGrammar(grammar, tokenDef) {
 
     gram[key] = {rules: splitted_rules, hooks: line.hooks || []};
   }
-  gram.tokenDef = tokenDef;
   gram.parse = function(stream) {
     return parse(stream, gram);
   };
@@ -434,7 +444,7 @@ var best_p = 0;
 function parse(input, grammar) {
   var bestResult = {type:'START', sp:0, complete:false}, i, result, stream;
   //if(typeof input === 'string') {
-  stream = tokenize(input, grammar.tokenDef);
+  stream = tokenize(input, grammar);
   //}
   best_parse = {sp:0, candidates:[]};
   best_p = 0;
