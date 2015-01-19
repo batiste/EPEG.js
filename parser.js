@@ -57,15 +57,15 @@ function tokenize(input, gram) {
 }
 
 function copyToken(stoken, rtoken) {
-  if(rtoken.name) {
-    return {type:stoken.type,
-      value:stoken.value,
-      name:rtoken.name,
-      repeat:rtoken.repeat};
-  }
-  return {type:stoken.type,
+  var t = {
+    type:stoken.type,
     value:stoken.value,
-    repeat:rtoken.repeat};
+    repeat:rtoken.repeat
+  };
+  if(rtoken.name) {
+    t.name = rtoken.name;
+  }
+  return t;
 }
 
 function createParams(tokens) {
@@ -413,16 +413,23 @@ function errorMsg(input, stream, sp, errorType, m) {
   return msg;
 }
 
-function hint(input, stream, best_parse) {
+function hint(input, stream, best_parse, grammar) {
   if(!best_parse || !best_parse.candidates[0]) {
     return "Complete failure to parse";
   }
   var rule = best_parse.candidates[0][0];
 
+  function getTokenName(type) {
+    var tokendef = grammar.tokenMap[type];
+    return (tokendef && tokendef.verbose) || type;
+  }
+
   var array = [];
   best_parse.candidates.map(function(r) {
-    if(r[1] && array.indexOf(r[1].type) === -1) {
-      array.push(r[1].type);
+    if(!r[1]) { return; }
+    var name = getTokenName(r[1].type);
+    if(array.indexOf(name) === -1) {
+      array.push(name);
     }
   });
   var candidates = array.join(' or ');
@@ -464,7 +471,7 @@ function parse(input, grammar) {
   }
   bestResult.bestParse = best_parse;
   if(best_parse && !bestResult.complete) {
-    bestResult.hint = hint(input, stream, best_parse);
+    bestResult.hint = hint(input, stream, best_parse, grammar);
   }
   return bestResult;
 }

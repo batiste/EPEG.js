@@ -36,7 +36,8 @@ button {
 </head>
 <body>
 <h1>
-CokeScript
+CokeScript<br>
+<span style="font-size:0.6em">Socially not accepted scripting language</span>
 </h1>
 
 <p>CokeScript is a Python-like language that compile to JavaScript. CokeScript doesn't try to be too smart and is mainly syntactic sugar around common JavasScript annoyances. Features:</p>
@@ -44,11 +45,13 @@ CokeScript
 <ol>
 <li>Multiline strings</li>
 <li>Significant whitespace</li>
-<li>Short function declaration and lambda expression</li>
-<li>Function parameters default values</li>
+<li>Shorter function declaration and lambda expression</li>
+<li>Function parameters can have a default and computed value</li>
 <li>Simple <strong>for</strong> loop syntax that works on Array or Object</li>
 <li>Sensible scoping rules unlike <a href="https://donatstudios.com/CoffeeScript-Madness">CoffeeScript</a></li>
 <li>Classes and inheritance</li>
+<li>Strict syntax rules that enfore a rigid coding style</li>
+<li>A quite good grammar parser that hints about what is wrong</li>
 </ol>
 
 <p>More info on the github page <a href="https://github.com/batiste/EPEG.js">https://github.com/batiste/EPEG.js</a></p>
@@ -98,20 +101,20 @@ tiger.eat()
 <div class="col">
 <h2>Scope</h2>
 <textarea class="in">
-a = "string
-on multiple
+a = "string 
+on multiple 
 lines"
 
 c = 1 + 1
 
 def testScope(b)
   a = "does not erase the outer scope string"
-  b = "No var if it's a function param"
-  c := "Explicit assignment to parent scope variable"
+  b = "No var here because it's parameter of the function"
+  c := "Explicit assignment to parent scope variable with \":=\""
   return a
 
 testScope()
-a + " " + c
+a + ", " + c
 </textarea>
 
 <pre class="error" style=""></pre>
@@ -138,10 +141,10 @@ a + " " + c
 def fib(n)
     if n < 2
         return n
-    return fib(n-2) + fib(n-1)
+    return fib(n - 2) + fib(n - 1)
 
 array = [1, 2, 3, 4, 5, 6]
-double_fibo = array.map(def(i) fib(i*2))
+double_fibo = array.map(def(i) fib(i * 2))
 
 object = {a:1, b:2, c:4}
 for key, value in object

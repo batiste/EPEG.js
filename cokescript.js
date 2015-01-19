@@ -22,35 +22,35 @@ function resetGlobal() {
 // TODO: add functions
 var tokenDef = [
   {key:"comment", func:commentDef},
-  {key:"function_def", func: defDef},
+  {key:"function_def", func: defDef, verbose:"function definition"},
   {key:"class", reg:/^class /},
-  {key:"ret", reg:/^return/},
+  {key:"ret", reg:/^return/, verbose:"return"},
   {key:"if", reg:/^if /},
   {key:"elseif", reg:/^elseif /},
   {key:"else", reg:/^else/},
-  {key:"for_loop", reg:/^for /},
+  {key:"for_loop", reg:/^for /, verbose:"for loop"},
   {key:"in", reg:/^in /},
   {key:"name", reg:/^[a-zA-Z_$][0-9a-zA-Z_]{0,29}/}, // 30 chars max
-  {key:"math_operators", reg:/^(\+\+|\-\-)/},
-  {key:"binary_operators", reg:/^(\&\&|\|\||\&|\||<<|\>\>)/},
+  {key:"math_operators", reg:/^(\+\+|\-\-)/, verbose:"math operator"},
+  {key:"binary_operators", reg:/^(\&\&|\|\||\&|\||<<|\>\>)/, verbose:"binary operator"},
   {key:"comparison", reg:/^(<=|>=|<|>|===|!=|==)/},
   {key:"assign", reg:/^(\+=|-=|=|:=)/},
   {key:"number", reg:/^[0-9]+\.?[0-9]*/}, // only positive for now
   {key:"comma", reg:/^\,/},
   {key:"dot", reg:/^\./},
-  {key:"colon", reg:/^\:/},
-  {key:"open_par", reg:/^\(/},
-  {key:"close_par", reg:/^\)/},
-  {key:"open_bra", reg:/^\[/},
-  {key:"close_bra", reg:/^\]/},
-  {key:"open_curly", reg:/^\{/},
-  {key:"close_curly", reg:/^\}/},
+  {key:"colon", reg:/^\:/, verbose:":"},
+  {key:"open_par", reg:/^\(/, verbose:"("},
+  {key:"close_par", reg:/^\)/, verbose:")"},
+  {key:"open_bra", reg:/^\[/, verbose:"["},
+  {key:"close_bra", reg:/^\]/, verbose:"]"},
+  {key:"open_curly", reg:/^\{/, verbose:"{"},
+  {key:"close_curly", reg:/^\}/, verbose:"}"},
   {key:"math", reg:/^[-|\+|\*|/|%]/},
-  {key:"samedent", func:dent('samedent')},
+  {key:"samedent", func:dent('samedent'), verbose:"same indentation"},
   {key:"dedent", func:dent('dedent')},
   {key:"indent", func:dent('indent')},
   //newline: /^(\r?\n|$)/,
-  {key:"W", reg:/^[ ]/},
+  {key:"W", reg:/^[ ]/, verbose:"single whitespace"},
   {key:"string", func:stringDef}
 ];
 
@@ -152,7 +152,7 @@ function forLoop(params) {
 
 var grammarDef = {
   "START": {rules:["LINE* EOF"]},
-  "LINE": {rules:["STATEMENT samedent+", "STATEMENT !dedent", "comment? samedent"]},
+  "LINE": {rules:["STATEMENT samedent+", "STATEMENT !dedent", "comment? samedent"], verbose:"new line"},
   "STATEMENT": {rules:["ASSIGN", "IF", "FOR", "EXPR", "RETURN", "CLASS"]},
   "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE+ dedent"]},
@@ -191,9 +191,9 @@ var grammarDef = {
   "ELSE_IF": {rules:["samedent elseif e:EXPR b:BLOCK"], hooks:[else_if_def]},
   "ELSE": {rules:["samedent else b:BLOCK"], hooks:[else_def]},
   "IF": {rules:["if e:EXPR b:BLOCK elif:ELSE_IF* el:ELSE?"], hooks:[if_def]},
-  "MATH": {rules:["e1:EXPR W? op:math W? e2:EXPR"]},
+  "MATH": {rules:["e1:EXPR W op:math W e2:EXPR"]},
   "PATH": {rules:["PATH dot name", "PATH open_bra number close_bra", "name"]},
-  "ASSIGN": {rules:["left:EXPR W? op:assign W? right:EXPR"], hooks:[
+  "ASSIGN": {rules:["left:EXPR W op:assign W right:EXPR"], hooks:[
     function(p){
       return {left:p.left, op:p.op, right:p.right};
     }]
@@ -230,8 +230,8 @@ var grammarDef = {
   "RETURN": {rules:["ret W EXPR", "ret"]},
   "RIGHT_EXPR": {rules: [
     "math_operators",
-    "W? binary_operators W? EXPR",
-    "W? comparison W? EXPR",
+    "W binary_operators W EXPR",
+    "W comparison W EXPR",
     "dot EXPR",
     "open_bra EXPR close_bra"
   ]},
@@ -247,7 +247,9 @@ var grammarDef = {
     "name",
     "PATH",
     "ARRAY",
-    "OBJECT"]},
+    "OBJECT"],
+  verbose:"expression"
+  },
 };
 
 function spacer(n) {
