@@ -138,20 +138,24 @@ a + ", " + c
 <div class="col">
 <h2>Functions and Loops</h2>
 <textarea class="in">
+memo = {}
+
 def fib(n)
+    if memo[n]
+      return memo[n]
     if n < 2
         return n
-    return fib(n - 2) + fib(n - 1)
+    memo[n] = fib(n - 2) + fib(n - 1)
+    return memo[n]
 
-array = [1, 2, 3, 4, 5, 6]
-double_fibo = array.map(def(i) fib(i * 2))
+array = [1, 2, 3]
+fibo_square = array.map(def(i) fib(i * i))
 
-object = {a:1, b:2, c:4}
-for key, value in object
-  object[key] = fib(value)
+out = ""
+for key, value in memo
+   out += key + ":" + value + "; "
 
-object.c
-
+out
 </textarea>
 
 <pre class="error" style=""></pre>
