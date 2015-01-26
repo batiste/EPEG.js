@@ -20,18 +20,18 @@ gulp.task("build", function() {
 
 
 gulp.task("jshint", function() {
-  gulp.src("cokescript.js")
+  gulp.src("EPEG.js")
     .pipe(jshint())
     .pipe(jshint.reporter(stylish));
 });
 
 gulp.task("release", function() {
-  return browserify("./cokescript.js", {
+  return browserify("./EPEG.js", {
       debug: false,
-      standalone: "cokescript"
+      standalone: "EPEG"
     })
     .bundle()
-    .pipe(source("cokescript.min.js"))
+    .pipe(source("EPEG.min.js"))
     .pipe(streamify(uglify()))
     .pipe(gulp.dest("./dist"));
 });
