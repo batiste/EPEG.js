@@ -2,8 +2,6 @@
   CokeScript language by Batiste Bieler 2015
   Implemented using EPEG.JS
 */
-
-(function(){
 "use strict";
 
 var depth = 0;
@@ -154,7 +152,6 @@ var grammarDef = {
   "START": {rules:["LINE* EOF"]},
   "LINE": {rules:["STATEMENT samedent+", "STATEMENT !dedent", "comment? samedent"], verbose:"new line"},
   "STATEMENT": {rules:["ASSIGN", "IF", "FOR", "EXPR", "RETURN", "CLASS"]},
-  "VALUE": {rules:["number", "string"]},
   "BLOCK": {rules: ["indent LINE+ dedent"]},
   "CLASS_METHODS": {
       rules: ["samedent* f:FUNC_DEF samedent*"],
@@ -175,6 +172,7 @@ var grammarDef = {
       "p1:name assign e:EXPR",
       "p1:name",
     ],
+    verbose:"function parameters"
   },
   "LAMBDA": {rules:[
       "function_def open_par p:FUNC_DEF_PARAMS? close_par W b:EXPR",
@@ -186,7 +184,8 @@ var grammarDef = {
       "function_def open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK",
       "function_def W fn:name open_par p:FUNC_DEF_PARAMS? close_par b:BLOCK",
     ],
-    hooks: [f_def, f_def]
+    hooks: [f_def, f_def],
+    verbose:"function definition"
   },
   "ELSE_IF": {rules:["samedent elseif e:EXPR b:BLOCK"], hooks:[else_if_def]},
   "ELSE": {rules:["samedent else b:BLOCK"], hooks:[else_def]},
@@ -198,7 +197,7 @@ var grammarDef = {
       return {left:p.left, op:p.op, right:p.right};
     }]
   },
-  "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W? EXPR", "EXPR"]},
+  "FUNC_CALL_PARAMS": {rules:["FUNC_CALL_PARAMS comma W EXPR", "EXPR"]},
   "FUNC_CALL": {rules:["name open_par FUNC_CALL_PARAMS? close_par"]},
 
   "FOR": {rules:[
@@ -233,8 +232,10 @@ var grammarDef = {
     "W binary_operators W EXPR",
     "W comparison W EXPR",
     "dot EXPR",
-    "open_bra EXPR close_bra"
-  ]},
+    "open_bra EXPR close_bra",
+    ],
+    verbose:"expression"
+  },
   "EXPR": {rules: [
     "MATH",
     "EXPR RIGHT_EXPR",
@@ -248,7 +249,7 @@ var grammarDef = {
     "PATH",
     "ARRAY",
     "OBJECT"],
-  verbose:"expression"
+    verbose:"expression"
   },
 };
 
@@ -501,9 +502,10 @@ function generateModule(input) {
   return {ast:ast, code:generateCode(ast)};
 }
 
+var EPEG = require("./EPEG.js");
 var gram = EPEG.compileGrammar(grammarDef, tokenDef);
 
-window.CokeScript = {
+module.exports = {
   grammar: gram,
   grammarDef: grammarDef,
   tokenDef: tokenDef,
@@ -511,4 +513,3 @@ window.CokeScript = {
   generateCode: generateCode
 };
 
-})();

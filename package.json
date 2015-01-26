@@ -1,0 +1,36 @@
+{
+  "name": "epegjs",
+  "version": "0.0.1",
+  "description": "\"A Grammar Parser that can handle direct left recursion\"",
+  "main": "dist/EPEG",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/batiste/EPEG.js.git"
+  },
+  "keywords": [
+    "peg",
+    "parser",
+    "language",
+    "grammar"
+  ],
+  "author": "Batiste Bieler",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/batiste/EPEG.js/issues"
+  },
+  "homepage": "https://github.com/batiste/EPEG.js",
+  "devDependencies": {
+    "browserify": "~8.1.1",
+    "vinyl-source-stream": "~1.0.0",
+    "gulp-uglify": "~1.1.0",
+    "gulp-streamify": "0.0.5",
+    "gulp-jshint": "~1.9.0",
+    "jshint-stylish": "~1.0.0"
+  }
+}

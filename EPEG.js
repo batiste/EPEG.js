@@ -6,8 +6,6 @@
 
   Batiste Bieler 2014
 */
-
-(function(){
 "use strict";
 
 function tokenize(input, gram) {
@@ -365,8 +363,8 @@ function compileGrammar(grammar, tokenDef) {
       }
       splitted_rules.push({key: key, index:j, tokens:tokens});
     }
-
-    gram[key] = {rules: splitted_rules, hooks: line.hooks || []};
+    // todo: use a property
+    gram[key] = {rules: splitted_rules, hooks: line.hooks || [], verbose:line.verbose};
   }
   gram.parse = function(stream) {
     return parse(stream, gram);
@@ -413,31 +411,37 @@ function errorMsg(input, stream, sp, errorType, m) {
   return msg;
 }
 
+function verboseName(grammar, type) {
+  var tokendef = grammar.tokenMap[type];
+  if(tokendef && tokendef.verbose) {
+    return tokendef.verbose;
+  }
+  if(grammar[type] && grammar[type].verbose) {
+    return grammar[type].verbose;
+  }
+  return type;
+}
+
 function hint(input, stream, best_parse, grammar) {
   if(!best_parse || !best_parse.candidates[0]) {
     return "Complete failure to parse";
   }
   var rule = best_parse.candidates[0][0];
 
-  function getTokenName(type) {
-    var tokendef = grammar.tokenMap[type];
-    return (tokendef && tokendef.verbose) || type;
-  }
-
   var array = [];
   best_parse.candidates.map(function(r) {
     if(!r[1]) { return; }
-    var name = getTokenName(r[1].type);
+    var name = verboseName(grammar, r[1].type);
     if(array.indexOf(name) === -1) {
       array.push(name);
     }
   });
   var candidates = array.join(' or ');
 
-  var msg = errorMsg(input, stream, best_parse.sp, "Parser error", "Rule " + rule.key);
+  var msg = errorMsg(input, stream, best_parse.sp, "Parser error", "Rule " + verboseName(grammar, rule.key));
   msg = msg + "\nExpect " + candidates;
   var lastToken = stream[best_parse.sp] || {type:"EOF"};
-  msg = msg + "\nBut got " + lastToken.type + " instead";
+  msg = msg + "\nBut got " + verboseName(grammar, lastToken.type) + " instead";
 
   return msg;
 }
@@ -476,12 +480,10 @@ function parse(input, grammar) {
   return bestResult;
 }
 
-window.EPEG = {
+module.exports = {
   parse: parse,
   stack: stack,
   compileGrammar: compileGrammar,
   tokenize: tokenize,
   memoization: memoization
 };
-
-})();
