@@ -417,7 +417,7 @@ A -> Aba
 
 */
 
-
+/*
 var gram10 = EPEG.compileGrammar(grammar, tokens);
 
 assertComplete("ab", gram10);
@@ -429,3 +429,28 @@ assertComplete("bab", gram10);
 assertIncomplete("", gram10);
 assertComplete("baba", gram10);
 assertComplete("abab", gram10);
+*/
+
+
+tokens = [
+  {key:"a", reg:/^a/},
+  {key:"b", reg:/^b/},
+];
+
+grammar = {
+  "EXPR": {rules: ["n1:a+ n2:b*"], hooks:[function(p) {return p;}]},
+  "START": {rules: ["EXPR EOF"]}
+};
+
+
+var gram11 = EPEG.compileGrammar(grammar, tokens);
+assertComplete("aabb", gram11);
+assertIncomplete("bbb", gram11);
+assertComplete("a", gram11);
+
+QUnit.test("Test createParams", function( assert ) {
+  var parsed = EPEG.parse("aabbb", gram11);
+  assert.equal(parsed.children[0].children.n1.length, 2);
+  assert.equal(parsed.children[0].children.n2.length, 3);
+
+});

@@ -71,7 +71,7 @@ function createParams(tokens) {
   var j = 0;
   tokens.map(function(i) {
     if(i.name) {
-      if(i.repeat == '*') {
+      if(i.repeat == '*' || i.repeat == '+') {
         if(!params[i.name]) {
           params[i.name] = [];
         }
