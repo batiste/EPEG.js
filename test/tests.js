@@ -1,4 +1,7 @@
 
+var EPEG = require('../dist/EPEG');
+var assert = require("assert");
+
 var tokens = [
   {key:"number", reg:/^-?[0-9]+\.?[0-9]*/},
   {key:"term", reg:/^[\+|-]/},
@@ -33,8 +36,6 @@ var gram = EPEG.compileGrammar(grammar, tokens);
 
 function assertComplete(input, g, log) {
 
-  QUnit.test( input, function( assert ) {
-
     var r = g.parse(input);
     var ts = EPEG.tokenize(input, g);
     if(log) {
@@ -45,15 +46,18 @@ function assertComplete(input, g, log) {
       console.log(r.hint);
     }
 
-    assert.ok( r.complete, input );
-  });
+    it("Assert input complete " + input, function() {
+      assert.equal(r.complete, true);
+    });
+
 }
 
 function assertIncomplete(input, g, log) {
-  QUnit.test( input, function( assert ) {
+
     var r = g.parse(input);
-    assert.ok( !r.complete, input );
-  });
+    it("Assert input complete " + input, function() {
+      assert.equal(r.complete, false);
+    });
 }
 
 
@@ -153,12 +157,13 @@ assertComplete("6\n6\n", gram2);
 assertIncomplete("6\n6\n6", gram2);
 
 
-QUnit.test( "Test that function calling with naming works", function( assert ) {
+
+it( "Test that function calling with naming works", function() {
   var parsed = EPEG.parse("6\n6\n", gram2);
   assert.equal( parsed.children[0].children.value, 6 );
 });
 
-QUnit.test( "Test that function calling with $ works", function( assert ) {
+it( "Test that function calling with $ works", function() {
   var parsed = EPEG.parse(",12\n", gram2);
   assert.equal( parsed.children[0].children.value, 12 );
 });
@@ -314,7 +319,7 @@ assertComplete("1 1 1 1 ", gram6);
 assertComplete("1 ", gram6);
 assertComplete("", gram6);
 
-QUnit.test("Test * works on the START", function( assert ) {
+it("Test * works on the START", function() {
   var parsed = EPEG.parse("1 2 ", gram6);
   assert.equal(parsed.children[0].children[0].value, 1);
   assert.equal(parsed.children[1].children[0].value, 2);
@@ -335,7 +340,7 @@ assertComplete("1 2 ", gram7);
 assertIncomplete("", gram7);
 
 
-QUnit.test("Test hooks", function( assert ) {
+it("Test hooks", function() {
   var parsed = EPEG.parse("1 2 3 ", gram7);
   assert.equal(parsed.children[0].children.length, 1);
   assert.equal(parsed.children[0].children[0].value, 1);
@@ -366,7 +371,7 @@ assertComplete("1 2", gram8);
 assertComplete("1 2 3", gram8);
 assertIncomplete("", gram8);
 
-QUnit.test("Test hooks 2", function( assert ) {
+it("Test hooks 2", function() {
   var parsed = EPEG.parse("1 2 3", gram8);
   assert.equal(parsed.children[0].children.length, 2);
   assert.equal(parsed.children[0].children[1].value, 3);
@@ -448,7 +453,7 @@ assertComplete("aabb", gram11);
 assertIncomplete("bbb", gram11);
 assertComplete("a", gram11);
 
-QUnit.test("Test createParams", function( assert ) {
+it("Test createParams", function( ) {
   var parsed = EPEG.parse("aabbb", gram11);
   assert.equal(parsed.children[0].children.n1.length, 2);
   assert.equal(parsed.children[0].children.n2.length, 3);
