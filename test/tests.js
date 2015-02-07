@@ -254,7 +254,7 @@ grammar = {
 
 var gram4 = EPEG.compileGrammar(grammar, tokens);
 
-assertComplete("hello", gram4, true);
+assertComplete("hello", gram4);
 assertIncomplete(" hello", gram4);
 assertIncomplete("hello ", gram4);
 

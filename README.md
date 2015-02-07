@@ -11,9 +11,7 @@ http://www.vpri.org/pdf/tr2007002_packrat.pdf
 
 Indirect recursion is not implemented yet.
 
-Demo http://batiste.info/EPEG.js/
-
-Tests http://batiste.info/EPEG.js/tests/tests.html
+CokeScript is an example of an CoffeScript-like language implement with EPEG https://github.com/batiste/CokeScript/
 
 EPEG.js is able to provide quite accurate grammar parsing error messages that are
 directly formatted.
@@ -121,4 +119,16 @@ parser = EPEG.compileGrammar(grammarDef, tokensDef);
 
 valid("1 2");
 ```
+
+
+Running the test
+-----------------
+
+  $ mocha
+
+  ✓ Assert input complete bbb
+  ✓ Assert input complete a
+  ✓ Test createParams
+
+  100 passing (18ms)
 
