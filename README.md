@@ -124,11 +124,11 @@ valid("1 2");
 Running the test
 -----------------
 
-  $ mocha
-
-  ✓ Assert input complete bbb
-  ✓ Assert input complete a
-  ✓ Test createParams
-
-  100 passing (18ms)
+    $ mocha
+    s
+    ✓ Assert input complete bbb
+    ✓ Assert input complete a
+    ✓ Test createParams
+    
+    100 passing (18ms)
 
