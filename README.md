@@ -125,7 +125,7 @@ Running the test
 -----------------
 
     $ mocha
-    s
+    
     ✓ Assert input complete bbb
     ✓ Assert input complete a
     ✓ Test createParams
