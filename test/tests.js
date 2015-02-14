@@ -46,7 +46,7 @@ function assertComplete(input, g, log) {
       console.log(r.hint);
     }
 
-    it("Assert input complete " + input, function() {
+    it("Grammar accept: " + input.replace(/\n|\r/m, ' '), function() {
       assert.equal(r.complete, true);
     });
 
@@ -55,7 +55,7 @@ function assertComplete(input, g, log) {
 function assertIncomplete(input, g, log) {
 
     var r = g.parse(input);
-    it("Assert input complete " + input, function() {
+    it("Grammar reject: " + input.replace(/\n|\r/m, ' '), function() {
       assert.equal(r.complete, false);
     });
 }
@@ -453,9 +453,56 @@ assertComplete("aabb", gram11);
 assertIncomplete("bbb", gram11);
 assertComplete("a", gram11);
 
-it("Test createParams", function( ) {
+it("Test createParams", function() {
   var parsed = EPEG.parse("aabbb", gram11);
   assert.equal(parsed.children[0].children.n1.length, 2);
   assert.equal(parsed.children[0].children.n2.length, 3);
 
 });
+
+
+it("Test token not found", function( ) {
+  assert.throws(function() {
+      var parsed = EPEG.parse("invalid", gram11);
+    },
+    /total match failure/
+  );
+  assert.throws(function() {
+      var parsed = EPEG.parse("aa invalid", gram11);
+    },
+    /No matching token found/
+  );
+
+});
+
+it("Test invalid token definition", function( ) {
+  var invalid = [
+    {invalid: 'hello'},
+  ];
+
+  assert.throws(function() {
+      EPEG.compileGrammar(grammar, invalid);
+    },
+    /Invalid token type used in the grammar/
+  );
+
+});
+
+it("Test invalid token definition 2", function( ) {
+  var tokens = [
+    {key:"a", reg:/^a/, verbose: 'aaas'},
+    {key:"b", reg:/^b/, verbose: 'bees'},
+    {key:"invalid"},
+  ];
+
+  assert.throws(function() {
+      var g = EPEG.compileGrammar(grammar, tokens);
+      EPEG.tokenize("test", g);
+    },
+    /Tokenizer error: Invalid token/
+  );
+
+
+
+});
+

@@ -33,7 +33,7 @@ function tokenize(input, gram) {
           break;
         }
       } else {
-        throw "Invalid token " + key + " without a reg or fund property";
+        throw new Error("Tokenizer error: Invalid token " + key + " without a reg or func property");
       }
     }
     if(candidate !== null) {
@@ -42,12 +42,15 @@ function tokenize(input, gram) {
       pointer += candidate.length;
       input = input.substr(candidate.length);
     } else {
+      if(stream.length === 0) {
+        throw new Error("Tokenizer error: total match failure");
+      }
       if(lastToken)
         lastToken.pointer += lastToken.value.length;
-      var msg = errorMsg(copy, stream, stream.length - 1, "Tokenizer error", "No matching token found");
+      var msg = errorMsg(copy, stream[stream.length - 1], "Tokenizer error", "No matching token found");
       if(lastToken)
         msg += "\n" + "Before token of type " + lastToken.type + ": " + lastToken.value;
-      throw msg;
+      throw new Error(msg);
     }
   }
   stream.push({type:'EOF', value:""});
@@ -311,7 +314,7 @@ function grammarToken(token) {
   }
   t.repeat = repeat;
   if((repeat === '*' || repeat === '+') && nonCapturing) {
-    throw "Impossible to have non capturing token that repeats";
+    throw new Error("Impossible to have non capturing token that repeats");
   }
   if(nonCapturing) {
     t.nonCapturing = nonCapturing;
@@ -320,7 +323,7 @@ function grammarToken(token) {
 }
 
 function compileGrammar(grammar, tokenDef) {
-  var keys = Object.keys(grammar), i, j;
+  var keys = Object.keys(grammar), i, j, k;
   var gram = {}, optional, nonCapturing;
 
   gram.tokenDef = tokenDef;
@@ -343,23 +346,22 @@ function compileGrammar(grammar, tokenDef) {
     for(j=0; j<rules.length; j++) {
       var tokens = splitTrim(rules[j], ' ');
       optional = 0;
-      tokens = tokens.map(function(t) {
-        var token = grammarToken(t);
+      for(k=0; k<tokens.length; k++) {
+        var token = tokens[k] = grammarToken(tokens[k]);
         if(allValidKeys.indexOf(token.type) === -1 && token.type !== 'EOF') {
-          throw "Invalid token type used in the grammar: " + token.type;
+          throw new Error("Invalid token type used in the grammar rule "+key+": " + token.type + ', valid tokens are: '+allValidKeys.join(', '));
         }
         if(token.repeat === '*') {
           optional += 1;
         }
         if(token.nonCapturing) {
-          if(tokens[tokens.length - 1] != t) {
-            throw "Non capturing token has to be the last one in the rule: " + token.type;
+          if(tokens[tokens.length - 1] != tokens[k]) {
+            throw new Error("A non capturing token can only be the last one in the rule: " + token.type);
           }
         }
-        return token;
-      });
+      }
       if(optional === tokens.length) {
-        throw "Rule " + rules[j] + " only has * tokens.";
+        throw new Error("Rule " + rules[j] + " only has optional greedy tokens.");
       }
       splitted_rules.push({key: key, index:j, tokens:tokens});
     }
@@ -380,9 +382,8 @@ function spacer(n) {
   return out;
 }
 
-function errorMsg(input, stream, sp, errorType, m) {
+function errorMsg(input, token, errorType, m) {
 
-  var token = stream[sp];
   var charn = token.pointer || 0;
   var lines = input.split("\n"), i, charCounter = 0, charOnLine = 0;
 
@@ -438,7 +439,7 @@ function hint(input, stream, best_parse, grammar) {
   });
   var candidates = array.join(' or ');
 
-  var msg = errorMsg(input, stream, best_parse.sp, "Parser error", "Rule " + verboseName(grammar, rule.key));
+  var msg = errorMsg(input, stream[best_parse.sp], "Parser error", "Rule " + verboseName(grammar, rule.key));
   msg = msg + "\nExpect " + candidates;
   var lastToken = stream[best_parse.sp] || {type:"EOF"};
   msg = msg + "\nBut got " + verboseName(grammar, lastToken.type) + " instead";
