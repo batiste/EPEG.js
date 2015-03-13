@@ -1,6 +1,6 @@
 {
   "name": "epegjs",
-  "version": "0.0.5",
+  "version": "0.0.51",
   "description": "\"A Grammar Parser that can handle direct left recursion\"",
   "main": "dist/EPEG",
   "directories": {

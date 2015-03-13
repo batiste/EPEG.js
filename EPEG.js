@@ -458,11 +458,11 @@ function hookTree(node) {
   if(!node.children) {
     return;
   }
-  if(node.hook) {
-    node.children = node.hook(createParams(node.children));
-  }
   for(var i=0; i<node.children.length; i++) {
     hookTree(node.children[i]);
+  }
+  if(node.hook) {
+    node.children = node.hook(createParams(node.children));
   }
 }
 
