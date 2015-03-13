@@ -21,7 +21,7 @@ function tokenize(input, gram) {
       key = keys[i];
       var token = tokens[key], match;
       if(token.func) {
-        match = token.func(input);
+        match = token.func(input, stream);
         if(match !== undefined) {
           candidate = match;
           break;
@@ -103,12 +103,7 @@ function growLR(grammar, rule, stream, pos, memo) {
       return progress;
     }
 
-    // apply rule hooks
-    if(hook && !result.hooked) {
-      result.children = hook(createParams(result.children));
-      result.hooked = true;
-    }
-    result.hooked = true;
+    result.hook = hook;
 
     // it's very important to update the memoized value
     // this is actually growing the seed in the memoization
@@ -116,6 +111,7 @@ function growLR(grammar, rule, stream, pos, memo) {
     memo.sp = result.sp;
     memo.start = result.start;
     memo.hooked = result.hooked;
+    memo.hook = result.hook;
     progress = result;
   }
   return progress;
@@ -187,17 +183,13 @@ function evalRuleBody(grammar, rule, stream, pointer) {
 
       if(!result) {
         for(j=0; j<expand_rules.length; j++) {
-          var r = expand_rules[j];
-          var hook = hooks && hooks[j];
+          var r = expand_rules[j], hook = hooks[j];
 
           result = memoEval(grammar, r, stream, sp);
 
           if(result) {
 
-            if(hook && !result.hooked) {
-              result.children = hook(createParams(result.children));
-            }
-            result.hooked = true;
+            result.hook = hook;
 
             memoization[r.key+';'+sp] = result;
 
@@ -216,9 +208,10 @@ function evalRuleBody(grammar, rule, stream, pointer) {
         sp = result.sp;
         currentNode.children.push({
             type: rtoken.type,
-            children:result.children,
+            children: result.children,
             sp:result.sp,
-            name:rtoken.name,
+            hook: result.hook,
+            name: rtoken.name,
             repeat: rtoken.repeat
           });
         if(!canRepeat(rtoken)) {
@@ -340,6 +333,7 @@ function compileGrammar(grammar, tokenDef) {
     var line = grammar[keys[i]];
     var key = keys[i];
     var rules = line.rules;
+    var hooks = [];
 
     var splitted_rules = [];
 
@@ -364,9 +358,16 @@ function compileGrammar(grammar, tokenDef) {
         throw new Error("Rule " + rules[j] + " only has optional greedy tokens.");
       }
       splitted_rules.push({key: key, index:j, tokens:tokens});
+      if(typeof line.hooks === "function") {
+        hooks.push(line.hooks);
+      } else if(line.hooks) {
+        if(line.hooks[j] === undefined) {
+          throw new Error("Incorrect number of hooks ar rule " + keys[i]); 
+        }
+        hooks.push(line.hooks[j]);
+      }
     }
-    // todo: use a property
-    gram[key] = {rules: splitted_rules, hooks: line.hooks || [], verbose:line.verbose};
+    gram[key] = {rules: splitted_rules, hooks: hooks || [], verbose:line.verbose};
   }
   gram.parse = function(stream) {
     return parse(stream, gram);
@@ -453,6 +454,18 @@ var memoization = {};
 var best_parse = null;
 var best_p = 0;
 
+function hookTree(node) {
+  if(!node.children) {
+    return;
+  }
+  if(node.hook) {
+    node.children = node.hook(createParams(node.children));
+  }
+  for(var i=0; i<node.children.length; i++) {
+    hookTree(node.children[i]);
+  }
+}
+
 function parse(input, grammar) {
   var bestResult = {type:'START', sp:0, complete:false}, i, result, stream;
   //if(typeof input === 'string') {
@@ -475,6 +488,7 @@ function parse(input, grammar) {
     }
   }
   bestResult.bestParse = best_parse;
+  hookTree(bestResult);
   if(best_parse && !bestResult.complete) {
     bestResult.hint = hint(input, stream, best_parse, grammar);
   }
