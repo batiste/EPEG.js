@@ -175,7 +175,7 @@ tokens = [
   {key:"math", reg:/^[\+|-|\*|/]/},
   {key:"fact", reg:/^[\*|/]/},
   {key:"w", reg:/^[ ]/},
-  {key:"func_def", reg:/^def/},
+  {key:"func_def", str:"def"},
   {key:"name", reg:/^[a-zA-Z][a-zA-Z1-9]*/},
   {key:"dot", reg:/^\./},
   {key:"openP", reg:/^\(/},

@@ -41,7 +41,7 @@ function tokenize(input, gram) {
           break;
         }
       } else {
-        throw new Error("Tokenizer error: Invalid token " + key + " without a reg or func property");
+        throw new Error("Tokenizer error: Invalid token " + key + " without a reg, str or func property");
       }
     }
     if(candidate !== null) {
