@@ -32,6 +32,12 @@ function tokenize(input, gram) {
           candidate = match[0];
           break;
         }
+      } else if(token.str){
+        match = input.indexOf(token.str);
+        if(match === 0) {
+          candidate = token.str;
+          break;
+        }
       } else {
         throw new Error("Tokenizer error: Invalid token " + key + " without a reg or func property");
       }
