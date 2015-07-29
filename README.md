@@ -62,7 +62,7 @@ This parse object only has the a parse method that return an Abstract Syntax Tre
 
 ## Other features
 
-### Tokenizer function
+### Tokenizer options
 
 If a regexp is not enough to find a token you can use a function.
 The contract is that you need to return the matched string. This string
@@ -73,8 +73,10 @@ tokens = [
   {key:"isHello", func:function(input) { if(input == 'hello'){ return input; }} },
   {key:"w", reg:/^[ ]/},
   {key:"n", reg:/^[a-z]+/}
+  {key:"n", str:"a string is acceptable too"}
 ];
 ```
+A simple static string is also accepted.
 
 ### Modifiers
 
