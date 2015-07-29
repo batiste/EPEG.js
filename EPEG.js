@@ -14,6 +14,8 @@ function tokenize(input, gram) {
   var stream = [];
   var len = input.length, candidate, i, key, copy = input, lastToken = null;
   var pointer = 0;
+  var line = 0;
+  var column = 0;
 
   while(pointer < len) {
     candidate = null;
@@ -43,8 +45,14 @@ function tokenize(input, gram) {
       }
     }
     if(candidate !== null) {
-      lastToken = {type:key, value:candidate, pointer:pointer};
+      lastToken = {type:key, value:candidate, pointer:pointer, line:line+1, column:column+1};
       stream.push(lastToken);
+      var line_breaks_count = countLineBreak(candidate);
+      line += line_breaks_count;
+      if(line_breaks_count > 0) {
+        column = 0;
+      }
+      column += countColumn(candidate);
       pointer += candidate.length;
       input = input.substr(candidate.length);
     } else {
@@ -63,11 +71,23 @@ function tokenize(input, gram) {
   return stream;
 }
 
+function countLineBreak(str) {
+  var m = str.split(/\n/g);
+  return m.length - 1;
+}
+
+function countColumn(str) {
+  var m = str.split(/\n/g);
+  return m[m.length-1].length;
+}
+
 function copyToken(stoken, rtoken) {
   var t = {
     type:stoken.type,
     value:stoken.value,
-    repeat:rtoken.repeat
+    repeat:rtoken.repeat,
+    line:stoken.line,
+    column:stoken.column
   };
   if(rtoken.name) {
     t.name = rtoken.name;
@@ -115,6 +135,8 @@ function growLR(grammar, rule, stream, pos, memo) {
     // this is actually growing the seed in the memoization
     memo.children = result.children;
     memo.sp = result.sp;
+    memo.line = result.line;
+    memo.column = result.column;
     memo.start = result.start;
     memo.hooked = result.hooked;
     memo.hook = result.hook;
@@ -168,10 +190,18 @@ function evalRuleBody(grammar, rule, stream, pointer) {
   var sp = pointer; // stream pointer
   var rp = 0;       // rule pointer
   var j, result;
-  var currentNode = {type: rule.key, children:[], start:pointer, name:rule.name};
 
   var rtoken = rule.tokens[rp];
   var stoken = stream[sp];
+
+  var currentNode = {
+    type: rule.key, 
+    children:[], 
+    start:pointer, 
+    name:rule.name, 
+    line:stoken.line, 
+    column:stoken.column
+  };
 
   while(rtoken && stoken) {
 
@@ -216,6 +246,8 @@ function evalRuleBody(grammar, rule, stream, pointer) {
             type: rtoken.type,
             children: result.children,
             sp:result.sp,
+            line: result.line,
+            column: result.column,
             hook: result.hook,
             name: rtoken.name,
             repeat: rtoken.repeat
@@ -488,6 +520,8 @@ function parse(input, grammar) {
         type:'START',
         children:result.children,
         sp: result.sp,
+        line: 1,
+        column: 1,
         complete:result.sp === stream.length,
         inputLength:stream.length,
       };

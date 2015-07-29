@@ -501,8 +501,43 @@ it("Test invalid token definition 2", function( ) {
     },
     /Tokenizer error: Invalid token/
   );
+});
 
+it("Test tokenize line and column counter", function( ) {
+  var tokens = [
+    {key:"a", reg:/^[a-zA-Z]+/},
+    {key:"b", reg:/^\n/}
+  ];
 
+  grammar = {
+    "EXPR": {rules: ["a b+ a b+"]},
+    "START": {rules: ["EXPR EOF"]}
+  };
+
+  var g = EPEG.compileGrammar(grammar, tokens);
+  var toks = EPEG.tokenize("abc\nabc\n", g);
+  assert.equal(toks[0].line, 1);
+  assert.equal(toks[0].column, 1);
+  assert.equal(toks[1].line, 1);
+  assert.equal(toks[1].column, 4);
+  assert.equal(toks[2].line, 2);
+  assert.equal(toks[2].column, 1);
+  assert.equal(toks[3].line, 2);
+  assert.equal(toks[3].column, 4);
+
+  var start = EPEG.parse("abc\nabc\n", g);
+
+  assert.equal(start.children[0].children[0].line, 1);
+  assert.equal(start.children[0].children[1].column, 4);
+  assert.equal(start.children[0].children[2].line, 2);
+  assert.equal(start.children[0].children[3].column, 4);
+  assert.equal(start.children[0].children[3].line, 2);
+
+  assert.equal(start.children[0].line, 1);
+  assert.equal(start.children[0].column, 1);
+
+  assert.equal(start.line, 1);
+  assert.equal(start.column, 1);
 
 });
 
