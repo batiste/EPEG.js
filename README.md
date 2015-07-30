@@ -73,7 +73,7 @@ tokens = [
   {key:"isHello", func:function(input) { if(input == 'hello'){ return input; }} },
   {key:"w", reg:/^[ ]/},
   {key:"n", reg:/^[a-z]+/}
-  {key:"n", str:"a string is acceptable too"}
+  {key:"s", str:"a string is acceptable too"}
 ];
 ```
 A simple static string is also accepted.
