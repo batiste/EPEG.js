@@ -10,11 +10,10 @@ name /^[a-zA-Z]+[a-zA-Z_0-9]*/
 Grammar
 
 RULE1
-	subrule* toto
-	asdf* asdf
+	tokenTitle* newLine
+	grammarTitle* name
 
 RULE2
-	subrule* toto
-	asdf* asdf
-	subrule* toto
-	asdf* asdf
+	tokenTitle+ newLine
+	grammarTitle* name
+	RULE1

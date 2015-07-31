@@ -116,11 +116,10 @@ if(!parsed.complete) {
     var code = generateCode(parsed);
     //console.log(code)
     var vm = require('vm');
-    var vmResult = vm.runInThisContext(code);
-
-    code = "var grammar = (function() {\n" + code;
-    code += "\nreturn EPEG.compileGrammar(grammar, tokens);";
-    code += "\n}());"
+    var sandbox = { EPEG: EPEG };
+    vm.createContext(sandbox);
+    code += "\nvar parser = EPEG.compileGrammar(grammar, tokens);";
+    var vmResult = vm.runInContext(code, sandbox);
     console.log(code);
 }
 
