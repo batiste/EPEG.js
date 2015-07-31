@@ -1,19 +1,18 @@
 
 Tokens
 
-tokenTitle "Tokens"
-grammarTitle "Grammar"
-newLine /^\n/
-func /^function.*/
-name /^[a-zA-Z]+[a-zA-Z_0-9]*/
+plus "+"
+minus "-"
+space " "
+func function(input) { return "hello" }
+number /^[0-9]*/
 
 Grammar
 
-RULE1
-	tokenTitle* newLine
-	grammarTitle* name
+START
+	MATH EOF
 
-RULE2
-	tokenTitle+ newLine
-	grammarTitle* name
-	RULE1
+MATH
+	number space? plus space? MATH
+	number space? minus space? MATH
+	number
