@@ -1,0 +1,20 @@
+
+Tokens
+
+tokenTitle "Tokens"
+grammarTitle "Grammar"
+newLine /^\n/
+func /^function.*/
+name /^[a-zA-Z]+[a-zA-Z_0-9]*/
+
+Grammar
+
+RULE1
+	subrule* toto
+	asdf* asdf
+
+RULE2
+	subrule* toto
+	asdf* asdf
+	subrule* toto
+	asdf* asdf

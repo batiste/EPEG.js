@@ -9,6 +9,9 @@
 "use strict";
 
 function tokenize(input, gram) {
+  if(typeof input !== "string") {
+    throw new Error("Input is not a string");
+  }
   var keys = gram.tokenKeys;
   var tokens = gram.tokenMap;
   var stream = [];
@@ -28,13 +31,13 @@ function tokenize(input, gram) {
           candidate = match;
           break;
         }
-      } else if(token.reg){
+      } else if(token.reg) {
         match = input.match(token.reg);
         if(match !== null) {
           candidate = match[0];
           break;
         }
-      } else if(token.str){
+      } else if(token.str) {
         match = input.indexOf(token.str);
         if(match === 0) {
           candidate = token.str;
@@ -407,7 +410,7 @@ function compileGrammar(grammar, tokenDef) {
     }
     gram[key] = {rules: splitted_rules, hooks: hooks || [], verbose:line.verbose};
   }
-  gram.parse = function(stream) {
+  gram.parse = function parseWithGrammar(stream) {
     return parse(stream, gram);
   };
   return gram;
@@ -423,7 +426,7 @@ function spacer(n) {
 
 function errorMsg(input, token, errorType, m) {
 
-  var charn = token.pointer || 0;
+  var charn = (token && token.pointer) || 0;
   var lines = input.split("\n"), i, charCounter = 0, charOnLine = 0;
 
   for(i=0; i<lines.length; i++) {
@@ -506,9 +509,7 @@ function hookTree(node) {
 
 function parse(input, grammar) {
   var bestResult = {type:'START', sp:0, complete:false}, i, result, stream;
-  //if(typeof input === 'string') {
   stream = tokenize(input, grammar);
-  //}
   best_parse = {sp:0, candidates:[]};
   best_p = 0;
   for(i=0; i<grammar.START.rules.length; i++) {
