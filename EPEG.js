@@ -520,6 +520,7 @@ function parse(input, grammar) {
       bestResult = {
         type:'START',
         children:result.children,
+        hook: grammar.START.hooks[i],
         sp: result.sp,
         line: 1,
         column: 1,
