@@ -541,3 +541,34 @@ it("Test tokenize line and column counter", function( ) {
 
 });
 
+it("Slow slow slow", function( ) {
+
+  var tokens67 = [
+    {key:"a", str:"a"},
+    {key:"b", str:"b"},
+    {key:"W", str:" "}
+  ];
+
+  var grammar67 = {
+    "EXPR": {rules: [
+      "EXPR W EXPR",
+      "EXPR EXPR",
+      "EXPR a",
+      "EXPR b",
+      "EXPR a b a b",
+      "EXPR b a b a",
+      //"EXPR a b a b b",
+      "a",
+      "b"
+    ]},
+    "START": {rules: ["EXPR EOF"]}
+  };
+
+  var g67 = EPEG.compileGrammar(grammar67, tokens67);
+  var r = g67.parse("a abbb aaa b aaaaab ababa a abbb aaa b aaaaab ababa a abbb aaa b aaaaab ababa");
+
+  assert.equal(r.complete, true);
+
+});
+
+
